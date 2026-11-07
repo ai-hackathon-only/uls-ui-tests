@@ -1,0 +1,17 @@
+{
+  "name": "uls-ui-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser UI tests for the MediaWiki UniversalLanguageSelector extension",
+  "license": "GPL-2.0-or-later",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:list": "playwright test --list"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
+  }
+}
