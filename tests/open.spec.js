@@ -15,7 +15,7 @@ const { test, expect } = require( './support/fixtures' );
  */
 function getLanguageTrigger( page, skin ) {
 	if ( skin === 'vector-2022' ) {
-		return page.locator( '#p-lang-btn, #p-lang-btn-checkbox, .vector-dropdown' ).first();
+		return page.locator( '#p-lang-btn-label, #p-lang-btn .mw-interlanguage-selector, #p-lang-btn-checkbox, #p-lang-btn' ).first();
 	}
 	if ( skin === 'minerva' ) {
 		return page.locator( '#ca-languages, .language-selector, a[data-event-name="menu.languages"], .minerva-icon--language-switcher' ).first();
@@ -26,11 +26,11 @@ function getLanguageTrigger( page, skin ) {
 
 /**
  * Returns the locator for the open language selector dialog.
- * Handles both classic jquery.uls dialog and V2 Codex/Vue rewrite overlay.
+ * Handles both classic jquery.uls dialog and V2 Codex/Vue rewrite overlay (.uls-rewrite).
  * @param {import('@playwright/test').Page} page
  */
 function getSelectorDialog( page ) {
-	return page.locator( '.uls-menu:visible, .ext-uls-dialog:visible, #languagesettings:visible, .cdx-dialog:visible, [role="dialog"]:visible' ).first();
+	return page.locator( '.uls-rewrite:visible, .uls-menu:visible, .ext-uls-dialog:visible, #languagesettings:visible, .cdx-dialog:visible, [role="dialog"]:visible' ).first();
 }
 
 /**
@@ -38,7 +38,7 @@ function getSelectorDialog( page ) {
  * @param {import('@playwright/test').Page} page
  */
 function getCloseButton( page ) {
-	return page.locator( '.uls-menu .uls-icon-close, .cdx-dialog__header__close-button, #languagesettings .ui-dialog-titlebar-close, button.uls-dialog-close, button[aria-label="Close"]:visible' ).first();
+	return page.locator( '.uls-rewrite button[aria-label*="close" i], .uls-menu .uls-icon-close, .cdx-dialog__header__close-button, #languagesettings .ui-dialog-titlebar-close, button.uls-dialog-close, button[aria-label="Close"]:visible' ).first();
 }
 
 test.describe( 'Trigger and selector lifecycle @open', () => {
@@ -62,7 +62,10 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const dialog = getSelectorDialog( page );
 		await expect( dialog ).toBeVisible();
 
-		// Press Esc to dismiss
+		// Press Esc to dismiss (desktop/tablet)
+		if ( uls.device === 'mobile' ) {
+			test.skip( true, 'n/a: mobile uses touch/back navigation rather than Esc' );
+		}
 		await page.keyboard.press( 'Escape' );
 		await expect( dialog, 'Selector dialog closes on Escape' ).toBeHidden();
 
@@ -72,7 +75,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 			if ( !active ) {
 				return false;
 			}
-			return !!( active.closest( '#p-lang-btn, #p-lang, #ca-languages, #pt-uls, .vector-dropdown, .uls-trigger' ) );
+			return !!( active.closest( '#p-lang-btn, #p-lang, #ca-languages, #pt-uls, .vector-dropdown, .uls-trigger, #language-selector, .language-selector' ) );
 		} );
 		expect( activeMatches, 'Focus restored to language trigger or its container' ).toBe( true );
 	} );
@@ -96,7 +99,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 				if ( !active ) {
 					return false;
 				}
-				return !!( active.closest( '#p-lang-btn, #p-lang, #ca-languages, #pt-uls, .vector-dropdown, .uls-trigger' ) );
+				return !!( active.closest( '#p-lang-btn, #p-lang, #ca-languages, #pt-uls, .vector-dropdown, .uls-trigger, #language-selector, .language-selector' ) );
 			} );
 			expect( activeMatches, 'Focus restored to language trigger or its container' ).toBe( true );
 		} else {
@@ -105,6 +108,9 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 	} );
 
 	test( 'Click outside closes selector @open', async ( { page, gotoWiki, uls } ) => {
+		if ( uls.device === 'mobile' ) {
+			test.skip( true, 'n/a: mobile dialog is fullscreen with no outside target' );
+		}
 		await gotoWiki( 'QA ULS search codes' );
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger ).toBeVisible();
