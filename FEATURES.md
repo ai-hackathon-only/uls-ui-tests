@@ -8,6 +8,10 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 - **Devices (3):** Desktop (1280×800), Tablet (820×1180, touch), Mobile (390×844, touch).
 - **Users (2):** Anonymous (`anon`), Logged in (`user`).
 - **Total Matrix Rows:** 40 projects (Minerva on tablet & mobile; desktop skins on desktop, tablet, and mobile; each × anon & user).
+- **Selector Architecture on Local Wiki:**
+  - On this wiki patch, all 7 skins run **ULS V2** (`resources/ext.uls.rewrite/`, `.uls-rewrite`). `minerva` and `vector-2022` are configured in `extension.json`, while `timeless`, `monobook`, `vector`, `modern`, and `cologneblue` are appended via `$wgULSLanguageSelectorV2SupportedSkins` in `LocalSettings.php` (lines 476, 486, 487, 496, 497). Legacy `.uls-menu` is used only when QA override cookies (`qa_t439715=old`, etc.) are explicitly supplied.
+  - **Desktop & Tablet (viewport >= 768px):** Renders as an anchored dialog/popup overlay; does not modify the URL hash.
+  - **Mobile (viewport < 768px, e.g. 390×844):** Renders as a fullscreen mobile overlay bound to the URL route `#/languages` (`ext.uls.interface.js:429-525`). Opening pushes `#/languages` with history state `{ ulsRoute: true }`; closing via Esc, close button, or browser back pops history/replaces state and restores focus to trigger.
 
 ---
 
@@ -21,13 +25,14 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
   - `timeless`: Sidebar / page tools portlet `#p-lang`.
   - `modern`: Left sidebar portlet `#p-lang`.
   - `cologneblue`: Left sidebar navigation `#p-lang`.
-  - `minerva`: Header / page language icon or MobileFrontend language switcher overlay.
-- **Selector dialog:** `#languagesettings` / `.uls-menu` overlay.
+  - `minerva`: Header / page language icon `#language-selector .mw-interlanguage-selector`.
+- **Selector dialog:** `#languagesettings` / `.uls-rewrite` (or legacy `.uls-menu`). On mobile (< 768px), manages the `#/languages` route.
 - **Covering spec:** `tests/open.spec.js`
   - `Language button opens selector dialog @open`
   - `Esc key closes selector and restores focus @open`
   - `Close button closes selector and restores focus @open`
   - `Click outside closes selector and restores focus @open`
+  - `Mobile route #/languages syncs with open/close and browser back @open`
 
 ---
 
@@ -40,7 +45,7 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
   - By language code: e.g. "de", "zh-yue", "be-tarask", "simple".
   - By prefix/partial match or typo tolerance.
   - In other scripts: e.g. Cyrillic, Arabic, Hanzi.
-  - Empty state: entering a non-existent language query displays "no results found".
+  - Empty state: entering a non-existent language query displays `EmptySearchEntrypoint.vue` / "no results found" state (`.uls-rewrite__no-results` or `.uls-no-results-found`).
 - **Covering spec:** `tests/search.spec.js`
   - `Search by English name @search`
   - `Search by autonym @search`
@@ -52,11 +57,12 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 
 ## 3. Interlanguage Navigation (`@interlanguage`)
 
-- **Description:** On pages with interlanguage links (e.g. `QA ULS search codes`), selecting a language navigates to that language's article. On pages with no interlanguage links, selector displays the empty links state.
+- **Description:** On pages with interlanguage links (e.g. `QA ULS search codes`), selecting a language navigates to that language's article. On pages with no interlanguage links, selector displays `EmptyListEntrypoint.vue` / the empty links state. When language links are missing, `MissingLanguagesEntrypoint.vue` provides entry to `MissingLanguagesPanel.vue`.
 - **Test page:** `QA ULS search codes` (contains links for `simple`, `als`, `zh-yue`, `be-x-old`, etc.).
 - **Covering spec:** `tests/interlanguage.spec.js`
   - `Selecting interlanguage link navigates to target article @interlanguage`
   - `Page without interlanguage links shows empty interlanguage state @interlanguage`
+  - `Missing languages panel trigger functions when available @interlanguage`
 
 ---
 
@@ -96,16 +102,18 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 
 ## 7. Special:Preferences Language Field (`@preferences`)
 
-- **Description:** Logged-in user can view and change language settings directly in `Special:Preferences#mw-prefsection-personal`.
+- **Description:** Logged-in user can view and change language settings directly in `Special:Preferences#mw-prefsection-personal`. Renders the user interface language setting and `PreferredLanguagesTab.vue` (`ext.uls.preferredlanguages` multi-select lookup).
 - **Row restriction:** Logged-in users only (`ULS_USER=user`). Anon rows mark this as `n/a: anon user`.
 - **Covering spec:** `tests/preferences.spec.js`
   - `User can view and change language setting in Special:Preferences @preferences`
+  - `Preferred languages tab renders multi-select lookup @preferences`
 
 ---
 
 ## 8. Keyboard Accessibility (`@keyboard`)
 
 - **Description:** Full keyboard navigation inside the language selector. Focus enters search input, Tab cycles through actionable elements, Arrow keys navigate language list, Enter selects language, and focus outline is clearly visible.
+- **Scope:** Applies to desktop (1280×800) and tablet (820×1180, including Minerva tablet) viewports where keyboard input is available. Mobile viewports (390×844) are tested for touch interaction under `@viewport`.
 - **Covering spec:** `tests/keyboard.spec.js`
   - `Tab and arrow navigation through language list @keyboard`
   - `Enter key activates selected language @keyboard`
@@ -169,7 +177,7 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 | **@interface-language** (Persist) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | **@settings** (Cog / IME / Webfonts)| Yes | Yes | Yes | Yes | Yes | Yes | `n/a: minerva` (no cog) |
 | **@preferences** (Special:Prefs) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) |
-| **@keyboard** (Full navigation) | Yes | Yes | Yes | Yes | Yes | Yes | `n/a: touch` (mobile) |
+| **@keyboard** (Full navigation) | Yes | Yes | Yes | Yes | Yes | Yes | Yes (tablet) / `n/a: touch` (mobile) |
 | **@rtl** (Mirroring & 390px) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | **@viewport** (Responsive tap) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | **@compact-links** (Compacted) | `n/a: v2022 dropdown` | Yes | Yes | Yes | Yes | Yes | `n/a: minerva` |
