@@ -7,6 +7,9 @@
 //    (testInfo.parallelIndex), logged in once per worker, storage state in .auth/.
 //  - errors: console errors, page errors and failed (>= 400) requests, collected
 //    from the first navigation and checked after each test (see known-errors.js).
+//  - Logged-in rows: after every test, pass or fail, the account's preferences
+//    are reset to the wiki defaults (action=options&reset=1), so a test that
+//    dies before it restores `language` does not leak into the next test.
 'use strict';
 const fs = require( 'fs' );
 const path = require( 'path' );
@@ -36,6 +39,27 @@ function wikiUrl( title, params, skin ) {
 	return u.toString();
 }
 
+// Reset all preferences of the logged-in account to the wiki defaults
+// (interface language en, no uls-preferences). Runs in the browser, because
+// Node does not resolve *.localhost hosts but Chrome does.
+async function resetPrefs( context ) {
+	const page = await context.newPage();
+	try {
+		await page.goto( `${ WIKI }/w/api.php` );
+		const body = await page.evaluate( async () => {
+			const api = '/w/api.php';
+			const tok = await ( await fetch( `${ api }?action=query&meta=tokens&type=csrf&format=json` ) ).json();
+			const form = new URLSearchParams( { action: 'options', reset: '1', format: 'json', token: tok.query.tokens.csrftoken } );
+			return ( await fetch( api, { method: 'POST', body: form } ) ).json();
+		} );
+		if ( body.options !== 'success' ) {
+			throw new Error( `Preference reset failed: ${ JSON.stringify( body ) }` );
+		}
+	} finally {
+		await page.close();
+	}
+}
+
 async function login( browser, username, file ) {
 	const ctx = await browser.newContext();
 	const page = await ctx.newPage();
@@ -51,6 +75,7 @@ async function login( browser, username, file ) {
 	}
 	fs.mkdirSync( AUTH_DIR, { recursive: true } );
 	await ctx.storageState( { path: file } );
+	await resetPrefs( ctx );
 	await ctx.close();
 }
 
@@ -83,6 +108,14 @@ const test = base.test.extend( {
 	userName: async ( { uls }, use, testInfo ) => {
 		await use( uls.user === 'user' ? accounts()[ testInfo.parallelIndex ] : null );
 	},
+
+	// Auto fixture: logged-in rows reset preferences after each test, even on failure.
+	resetPrefsAfter: [ async ( { context, uls }, use ) => {
+		await use();
+		if ( uls.user === 'user' ) {
+			await resetPrefs( context );
+		}
+	}, { auto: true } ],
 
 	errors: async ( { page }, use, testInfo ) => {
 		const list = [];
@@ -117,4 +150,4 @@ const test = base.test.extend( {
 	}
 } );
 
-module.exports = { test, expect: base.expect, wikiUrl, skinParams, WIKI };
+module.exports = { test, resetPrefs, expect: base.expect, wikiUrl, skinParams, WIKI };
