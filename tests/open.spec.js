@@ -25,7 +25,7 @@ function getLanguageTrigger( page, skin ) {
 		case 'timeless':
 		case 'modern':
 		case 'cologneblue':
-			return page.locator( '#p-lang .uls-settings-trigger, #p-lang' ).first();
+			return page.locator( 'button.mw-interlanguage-selector, #p-lang .uls-settings-trigger, #p-lang' ).first();
 		default:
 			throw new Error( `Unknown skin: ${ skin }` );
 	}
