@@ -18,7 +18,7 @@ module.exports = defineConfig( {
 	retries: 0, // flaky tests get fixed or removed, never retried
 	timeout: 30000,
 	expect: { timeout: 10000 },
-	reporter: [ [ 'list' ], [ 'html', { open: 'never', outputFolder: 'playwright-report' } ] ],
+	reporter: [ [ 'list' ], [ 'html', { open: 'never', outputFolder: 'playwright-report' } ], [ './tests/support/summary-reporter.js' ] ],
 	use: {
 		channel: 'chrome',
 		headless: true,
