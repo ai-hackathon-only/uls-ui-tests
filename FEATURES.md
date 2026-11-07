@@ -9,7 +9,11 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 - **Users (2):** Anonymous (`anon`), Logged in (`user`).
 - **Total Matrix Rows:** 40 projects (Minerva on tablet & mobile; desktop skins on desktop, tablet, and mobile; each × anon & user).
 - **Selector Architecture on Local Wiki:**
-  - On this wiki patch, all 7 skins run **ULS V2** (`resources/ext.uls.rewrite/`, `.uls-rewrite`). `minerva` and `vector-2022` are configured in `extension.json`, while `timeless`, `monobook`, `vector`, `modern`, and `cologneblue` are appended via `$wgULSLanguageSelectorV2SupportedSkins` in `LocalSettings.php` (lines 476, 486, 487, 496, 497). Legacy `.uls-menu` is used only when QA override cookies (`qa_t439715=old`, etc.) are explicitly supplied.
+  - On this wiki patch (`review/1363211`), all 7 skins run **ULS V2 (rewrite)** (`resources/ext.uls.rewrite/`, DOM root `.uls-rewrite`) by default. `minerva` and `vector-2022` are configured in `extension.json` (`ULSLanguageSelectorV2SupportedSkins`), while `timeless`, `monobook`, `vector`, `modern`, and `cologneblue` are appended via `$wgULSLanguageSelectorV2SupportedSkins` in `LocalSettings.php` (lines 476, 486, 487, 496, 497).
+  - Legacy ULS (`resources/js/`, DOM root `.uls-menu` for selector and `#languagesettings` for dialog) is loaded when QA override cookies (`qa_t439715=old`, `qa_t439718=old`, `qa_t439851=old`) are explicitly supplied.
+  - **DOM Roots & Search Elements:**
+    - **ULS V2 Rewrite:** Root `.uls-rewrite` (or `.uls-rewrite.uls-rewrite--mobile` on viewports < 768px). Search input is `.uls-rewrite__search-active input[type="search"]`.
+    - **Legacy ULS:** Root `.uls-menu` / `#languagesettings`. Search input is `#languagefilter` or `.uls-languagefilter`.
   - **Desktop & Tablet (viewport >= 768px):** Renders as an anchored dialog/popup overlay; does not modify the URL hash.
   - **Mobile (viewport < 768px, e.g. 390×844):** Renders as a fullscreen mobile overlay bound to the URL route `#/languages` (`ext.uls.interface.js:429-525`). Opening pushes `#/languages` with history state `{ ulsRoute: true }`; closing via Esc, close button, or browser back pops history/replaces state and restores focus to trigger.
 
@@ -20,13 +24,15 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 - **Description:** Entry button opens the language selector dialog; Esc, close button, or click-outside closes it; focus returns to the entry button upon closing.
 - **Per-skin trigger placement:**
   - `vector-2022`: Header dropdown button `#p-lang-btn` / `.vector-dropdown`.
-  - `vector`: Left sidebar `#p-lang` trigger or cog trigger (`.uls-settings-trigger`).
-  - `monobook`: Left sidebar `#p-lang` trigger / `.uls-settings-trigger`.
-  - `timeless`: Sidebar / page tools portlet `#p-lang`.
-  - `modern`: Left sidebar portlet `#p-lang`.
-  - `cologneblue`: Left sidebar navigation `#p-lang`.
-  - `minerva`: Header / page language icon `#language-selector .mw-interlanguage-selector`.
-- **Selector dialog:** `#languagesettings` / `.uls-rewrite` (or legacy `.uls-menu`). On mobile (< 768px), manages the `#/languages` route.
+  - `vector`: Left sidebar `#p-lang` trigger or cog trigger (`.uls-settings-trigger`, `.mw-interlanguage-selector`).
+  - `monobook`: Left sidebar `#p-lang` trigger / `.uls-settings-trigger`, `.mw-interlanguage-selector`.
+  - `timeless`: Sidebar / page tools portlet `#p-lang` / `.uls-settings-trigger`.
+  - `modern`: Left sidebar portlet `#p-lang` / `.uls-settings-trigger`.
+  - `cologneblue`: Left sidebar navigation `#p-lang` / `.uls-settings-trigger`.
+  - `minerva`: Header / page language icon `.minerva-icon--language` or `.minerva-icon--language-switcher`.
+- **Selector dialog DOM roots:**
+  - Rewrite ULS: `.uls-rewrite` (with `.uls-rewrite--mobile` on mobile viewports < 768px, managing the `#/languages` route).
+  - Legacy ULS: `.uls-menu` overlay.
 - **Covering spec:** `tests/open.spec.js`
   - `Language button opens selector dialog @open`
   - `Esc key closes selector and restores focus @open`
@@ -69,7 +75,10 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 ## 4. Suggested Languages (`@suggested`)
 
 - **Description:** Previously selected or browser-suggested languages appear prominently in the "Suggested" / "Common languages" section on subsequent openings.
-- **Mechanism:** Stored in local storage / session cookies (`uls-previous-languages`).
+- **Mechanism & Source Files:**
+  - Old ULS: `resources/js/ext.uls.common.js:45` (`mw.uls.previousLanguagesStorageKey = 'uls-previous-languages'`).
+  - Rewrite ULS: `resources/ext.uls.rewrite/composables/useLanguageHistory.js:26` (`const PREVIOUS_LANGUAGE_STORAGE_KEY = 'uls-previous-languages'`).
+  - Both persist recent language codes as JSON arrays in `window.localStorage['uls-previous-languages']`.
 - **Covering spec:** `tests/suggested.spec.js`
   - `Previously selected language appears in suggested section @suggested`
 
@@ -87,12 +96,13 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 
 ## 6. Language Settings Cog (`@settings`)
 
-- **Description:** Cog icon opens Language Settings dialog with two primary tabs:
+- **Description:** Language Settings dialog with two primary tabs:
   1. **Display tab:** Interface language switcher and webfonts configuration.
   2. **Input tab:** Enable/disable input methods (IME), select input layout, type in search box and verify transliterated output.
-- **Per-skin availability:**
-  - Supported: `vector-2022`, `vector`, `monobook`, `timeless`, `modern`, `cologneblue`.
-  - Not available (`n/a: minerva`): Minerva uses MobileFrontend mobile UI; desktop ULS cog settings dialog is not loaded on mobile format.
+- **Per-skin availability & entrypoints:**
+  - **Legacy ULS:** Opened via `.uls-settings-trigger` cog icon in sidebar/interlanguage.
+  - **ULS V2 Rewrite:** Opened via `ext.uls.rewrite.languagesettings.entrypoint` (`LanguageSettingsEntrypoint.js`), which registers `id: 'language-settings-quick-action'` in the Quick Actions panel at the bottom of `.uls-rewrite` and in empty list view. When activated, it mounts `$settingsAnchor.languagesettings({ autoOpen: true })` displaying `#languagesettings`.
+  - **Minerva:** Available in ULS V2 rewrite via the Quick Action entrypoint inside `.uls-rewrite`. (The legacy standalone desktop sidebar cog does not appear on Minerva, but the settings panel is accessible via the quick action trigger).
 - **Covering spec:** `tests/settings.spec.js`
   - `Settings cog opens settings dialog @settings`
   - `Display tab shows interface and webfont settings @settings`
@@ -113,7 +123,7 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 ## 8. Keyboard Accessibility (`@keyboard`)
 
 - **Description:** Full keyboard navigation inside the language selector. Focus enters search input, Tab cycles through actionable elements, Arrow keys navigate language list, Enter selects language, and focus outline is clearly visible.
-- **Scope:** Applies to desktop (1280×800) and tablet (820×1180, including Minerva tablet) viewports where keyboard input is available. Mobile viewports (390×844) are tested for touch interaction under `@viewport`.
+- **Scope:** Applies across all skins. On tablet viewports (820×1180, including Minerva tablet) keyboard navigation operates via hardware keyboard or virtual input and must focus DOM interactive elements correctly. Mobile touch taps are tested under `@viewport`.
 - **Covering spec:** `tests/keyboard.spec.js`
   - `Tab and arrow navigation through language list @keyboard`
   - `Enter key activates selected language @keyboard`
@@ -162,6 +172,7 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 ## 13. Console & Network Request Health (`@errors`)
 
 - **Description:** Automated collection of browser console errors, unhandled exceptions, and HTTP >= 400 responses across all executed tests. Unexpected errors fail the test. Known harmless errors (such as missing `/favicon.ico` KI-0) are allow-listed in `tests/support/known-errors.js`.
+- **Known issues reporting:** Any real bug uncovered by tests must remain covered by an active test, marked as an expected failure, and documented in `KNOWN-ISSUES.md`. Each entry records: issue ID, skin, device, user, reproduction steps, expected vs actual behavior, screenshot under `docs/`, and ULS + core git commit hashes from `Special:Version`.
 - **Covering fixture:** `tests/support/fixtures.js` (evaluated after each test run).
 
 ---
@@ -175,9 +186,9 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 | **@interlanguage** (Navigation) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | **@suggested** (Recent langs) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | **@interface-language** (Persist) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| **@settings** (Cog / IME / Webfonts)| Yes | Yes | Yes | Yes | Yes | Yes | `n/a: minerva` (no cog) |
+| **@settings** (Cog / IME / Webfonts)| Yes | Yes | Yes | Yes | Yes | Yes | Yes (quick action) |
 | **@preferences** (Special:Prefs) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) |
-| **@keyboard** (Full navigation) | Yes | Yes | Yes | Yes | Yes | Yes | Yes (tablet) / `n/a: touch` (mobile) |
+| **@keyboard** (Full navigation) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | **@rtl** (Mirroring & 390px) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | **@viewport** (Responsive tap) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | **@compact-links** (Compacted) | `n/a: v2022 dropdown` | Yes | Yes | Yes | Yes | Yes | `n/a: minerva` |
