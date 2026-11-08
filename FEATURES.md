@@ -25,8 +25,8 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 - **Per-skin trigger placement:**
   - `vector-2022`: Header dropdown button `#p-lang-btn` / `.vector-dropdown`.
   - `vector`: Left sidebar `#p-lang` trigger or cog trigger (`.uls-settings-trigger`, `.mw-interlanguage-selector`).
-  - `monobook`: Left sidebar `#p-lang` trigger / `.uls-settings-trigger`, `.mw-interlanguage-selector`.
-  - `timeless`: Sidebar / page tools portlet `#p-lang` / `.uls-settings-trigger`.
+  - `monobook`: Left sidebar `#p-lang` trigger / `.uls-settings-trigger`, `.mw-interlanguage-selector`. Expected failure on mobile: KI-5 (sidebar navigation overlaps and intercepts trigger).
+  - `timeless`: Sidebar / page tools portlet `#p-lang` / `.uls-settings-trigger`. Expected failure on tablet & mobile: KI-4 (trigger portlet hidden by skin CSS under 851px).
   - `modern`: Left sidebar portlet `#p-lang` / `.uls-settings-trigger`.
   - `cologneblue`: Expected failure: KI-1 (no ULS trigger; `#p-lang` absent, `ext.uls.rewrite.entrypoints` remains registered).
   - `minerva`: Header / page language icon `.minerva-icon--language` or `.minerva-icon--language-switcher`.
@@ -134,6 +134,10 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 - **Covering spec:** `tests/rtl.spec.js`
   - `Selector mirrors correctly in RTL interface @rtl`
   - `No horizontal overflow at 390px viewport in RTL @rtl`
+- **Known issues:**
+  - `cologneblue`: Expected failure: KI-1 (no trigger).
+  - `timeless`: Expected failure on tablet & mobile: KI-4 (no trigger); expected failure on desktop: KI-6 (search input direction overridden to LTR by skin CSS).
+  - `monobook`: Expected failure on mobile: KI-5 (trigger intercepted).
 
 ---
 
@@ -153,7 +157,7 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
   - Supported: `vector`, `monobook`, `timeless`, `modern`, `cologneblue`.
   - `vector-2022`: Integrated into the unified language dropdown button.
   - `minerva`: `n/a: minerva` uses MobileFrontend native interlanguage list.
-- **Covering spec:** `tests/compact-links.spec.js`
+- **Covering spec:** `tests/compact-links.spec.js` (deferred / stretch item; not in core 11 feature specs).
   - `Compact interlanguage trigger opens selector on long language list @compact-links`
 
 ---
@@ -170,15 +174,15 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 
 | Feature Group | Vector 2022 | Vector legacy | MonoBook | Timeless | Modern | Cologne Blue | Minerva |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **@open** (Trigger & Dialog) | Yes (`#p-lang-btn`) | Yes (`#p-lang`) | Yes (`#p-lang`) | Yes (`#p-lang`) | Yes (`#p-lang`) | Expected fail: KI-1 | Yes (Mobile trigger) |
-| **@search** (Search & Autonyms) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
-| **@interlanguage** (Navigation) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
-| **@suggested** (Recent langs) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
+| **@open** (Trigger & Dialog) | Yes (`#p-lang-btn`) | Yes (`#p-lang`) | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes (`#p-lang`) | Expected fail: KI-1 | Yes (Mobile trigger) |
+| **@search** (Search & Autonyms) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes | Expected fail: KI-1 | Yes |
+| **@interlanguage** (Navigation) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes | Expected fail: KI-1 | Yes |
+| **@suggested** (Recent langs) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes | Expected fail: KI-1 | Yes |
 | **@uilang** (Interface & ?setlang=) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
-| **@settings** (Cog / IME / Webfonts)| Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes (quick action) |
+| **@settings** (Cog / IME / Webfonts)| Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes | Expected fail: KI-1 | Yes (quick action) |
 | **@prefs** (Special:Preferences) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) |
-| **@keyboard** (Full navigation) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
-| **@rtl** (Mirroring & 390px) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
-| **@viewport** (Responsive tap) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
+| **@keyboard** (Full navigation) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes | Expected fail: KI-1 | Yes |
+| **@rtl** (Mirroring & 390px) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail; KI-6 desktop fail) | Yes | Expected fail: KI-1 | Yes |
+| **@viewport** (Responsive tap) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes | Expected fail: KI-1 | Yes |
 | **@compact-links** (Compacted) | `n/a: v2022 dropdown` | Yes | Yes | Yes | Yes | Expected fail: KI-1 | `n/a: minerva` |
 | **@errors** (No 4xx/5xx/console) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
