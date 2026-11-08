@@ -44,6 +44,18 @@ The owner works on ULS and the new language selector and today checks each skin 
 - [ ] `README.md`: what this is, how to run it (the one command and the subset options), how to add a test for a new feature or skin, how to point it at another wiki (environment variables), and how to read the report; plain language per `SKILLS/de-ai/`. Licence GPL-2.0-or-later (same as ULS), stated in README and a `LICENSE` file.
 - [ ] Every agent signed off in `Check-in` and posted its retro in `Retro`.
 
+## Owner update: round 2 (08:20–12:20, Sunday 2026-11-08)
+Round 1 (00:20–03:20) did not meet the goal. The owner extended the event by 4 hours to finish the same "Done when" list. Round 1 retro: Discussion #31. Changes, taken from that retro:
+- **Merge the open work first.** Before new feature work, finish or close PRs #16 (@interlanguage), #26 (@suggested) and #28 (@keyboard) and their issues. At most **two open feature PRs** at a time.
+- **Run lock.** Only one seat runs the full matrix at a time, because parallel runs on the one wiki caused timeouts. Take the lock with `mkdir /Users/hueitan/projects/ai-hackathon/runs/ai-hackathon-only__uls-ui-tests/matrix.lock` (it fails if someone holds it), write your seat number and start time into a file inside it, and remove the folder when the run ends. A lock older than 30 minutes is stale and may be removed. Subset runs (one skin or one feature) don't need the lock.
+- **Full runs go in the background.** A turn is cut off after 10 minutes and the full matrix takes longer. Start it with `nohup npm test > <run folder>/matrix-seat<N>-<HHMM>.log 2>&1 &` while holding the lock, and read the result in a later round.
+- **Timeouts first.** Before calling the timeless tablet/mobile, monobook mobile and cologneblue failures ULS bugs, rerun them alone under the lock. If they pass alone, it was load: fix the test or the worker count. If they still fail, they go in `KNOWN-ISSUES.md` as expected failures.
+- **Interlanguage links** on the QA page point to external Wikipedia hosts. Tests must not load those hosts: intercept the navigation (for example `page.route`) and assert on the requested URL and language. That counts as "goes to that language's article".
+- **Gemini seats** can't start Chrome in their sandbox. They take source reading, reviews, FEATURES.md and KNOWN-ISSUES.md checks and test code that a Claude seat runs; their PRs say "not run" and name the seat that ran it.
+- **Freeze at 11:20.** After 11:20 no new feature PRs. Seat 5 (challenger) runs the final pair of full runs on `main`, alone under the lock, and posts both summaries and run times in one PR that ticks the "One command" and "Stable" lines. If seat 5 is down, seat 1 does it. Other seats only review and fix what those runs show.
+- **Check-in and retro:** reuse `Check-in` (#29). Seat 1 opens `Retro — round 2`; every seat posts a round-2 retro there.
+- Write budget: `writes_per_event` is now 300 and counts round 1 writes too.
+
 ## The test wiki and the machine (read this before you run anything)
 - Wiki: the owner's local **agent wiki**, `http://en.mediawiki-agents.mwdd.localhost:8081` (scripts at `/w/index.php`, pages at `/wiki/<title>`), on this Mac. It already has ULS, MobileFrontend and all seven skins.
 - Credentials: the file `/Users/hueitan/projects/ai-hackathon/runs/ai-hackathon-only__uls-ui-tests/wiki.env` sets `ULS_WIKI`, `ULS_USERS` (8 test accounts, `UlsTest1`…`UlsTest8`) and `ULS_PASSWORD`. The suite reads these environment variables. **Never commit this file or the password, and never paste it in a post.** Use a different account per parallel worker so preference changes don't collide. **Owner update 00:25: each seat uses its own accounts.** Seat N loads `/Users/hueitan/projects/ai-hackathon/runs/ai-hackathon-only__uls-ui-tests/wiki-seat<N>.env` (6 accounts `UlsSeat<N>w1`…`UlsSeat<N>w6`, same variables), so runs by two seats at the same time never share a user. `wiki.env` (`UlsTest1`…`UlsTest8`) is for the owner's runs. The suite must take the account list from `ULS_USERS` and run at most as many logged-in workers as there are accounts.
@@ -68,8 +80,8 @@ The owner works on ULS and the new language selector and today checks each skin 
 ai-hackathon:
   repo: ai-hackathon-only/uls-ui-tests
   owner: hueitan            # the human who is responsible
-  start: 2026-11-08T00:20+01:00
-  end:   2026-11-08T03:20+01:00
+  start: 2026-11-08T08:20+01:00
+  end:   2026-11-08T12:20+01:00
   round_minutes: 5                # how often each agent wakes up
   when_done_early: stretch          # stop | stretch | polish-until-end
   seats:                          # identities = GitHub Apps; roles are chosen by the agents
@@ -82,6 +94,6 @@ ai-hackathon:
   budget:                         # may only be stricter than the skill defaults
     writes_per_round: 6
     writes_per_hour: 40
-    writes_per_event: 150
+    writes_per_event: 300
   local_runs_allowed: true        # may agents run the code locally to check it?
 ```
