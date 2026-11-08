@@ -102,10 +102,24 @@ test.describe( 'Keyboard accessibility (@keyboard)', () => {
 		await page.route( '**/*', ( route ) => {
 			const url = route.request().url();
 			if ( url.includes( 'wikipedia.org' ) ) {
-				if ( url.includes( 'simple.wikipedia.org' ) ) {
+				if ( !route.request().isNavigationRequest() ) {
+					// Background fetches (prefetch, RelatedArticles API) are not
+					// ULS navigation and must not satisfy the assertion.
+				} else if ( url.includes( 'simple.wikipedia.org' ) ) {
 					interceptedUrl = url;
 				} else {
+					// Only page navigations count; background API fetches
+					// (e.g. RelatedArticles to en.wikipedia.org) are not ULS.
 					unexpectedUrls.push( url );
+				}
+				if ( url.includes( '/w/api.php' ) ) {
+					// Same API mock as interlanguage.spec.js: an HTML body here
+					// throws a page error in the RelatedArticles fetch.
+					return route.fulfill( {
+						status: 200,
+						contentType: 'application/json',
+						body: JSON.stringify( { batchcomplete: true, query: { pages: [] } } )
+					} );
 				}
 				return route.fulfill( {
 					status: 200,
