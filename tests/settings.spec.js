@@ -65,11 +65,19 @@ test.describe( 'Language settings @settings', () => {
 		markKnownIssues( test, uls, 'settings' );
 		await gotoWiki( PAGE );
 		const dialog = await openSettings( page, uls );
-		await dialog.locator( '#input-panel-trigger' ).click();
+		const inputTrigger = dialog.locator( '#input-panel-trigger' );
 		const panel = dialog.locator( '.uls-input-settings' );
-		await expect( panel ).toBeVisible();
-		// Input tools are on by default; the toggle offers to turn them off.
-		await expect( panel.locator( '.uls-input-toggle-button' ) ).toHaveText( 'Disable input tools' );
+		const displayPanel = dialog.locator( '.uls-display-settings' );
+		// Ensure the Input tab is activated and its panel is displayed.
+		// If the click lands before the tab click handler is bound,
+		// re-click until the display panel is hidden and input tools are ready.
+		await expect( async () => {
+			if ( !await displayPanel.isHidden() ) {
+				await inputTrigger.click();
+			}
+			await expect( displayPanel ).toBeHidden();
+			await expect( panel.locator( '.uls-input-toggle-button' ) ).toHaveText( 'Disable input tools' );
+		} ).toPass( { timeout: 10000 } );
 		// English offers the IPA input methods; pick X-SAMPA and apply.
 		await panel.locator( 'label[for="ipa-x-sampa"]' ).click();
 		await expect( panel.locator( '#ipa-x-sampa' ) ).toBeChecked();
