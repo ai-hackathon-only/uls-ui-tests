@@ -62,3 +62,16 @@ Allow-listed in `tests/support/known-errors.js`.
 - Actual: MonoBook's fixed-position desktop sidebar navigation (`#column-one`, `#p-navigation`) overlaps `#p-lang`, intercepting pointer events.
 - Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
 - In the suite: `tests/support/known-issues.js` marks trigger-based feature groups on MonoBook mobile rows as expected failures.
+
+## KI-6
+**Timeless skin stylesheet overrides ULS search input direction to LTR in RTL mode.**
+
+- Skins: `timeless`. Devices: desktop (also tablet and mobile, masked by KI-4). Users: anonymous and logged in.
+- Steps:
+  1. Open page `QA ULS search codes` with Timeless (`useskin=timeless`) in an RTL interface language (`uselang=ar`).
+  2. Open ULS selector dialog (`button.mw-interlanguage-selector`).
+  3. Inspect computed direction of search input (`input.uls-languagefilter`).
+- Expected: Search input computes to `direction: rtl` matching the mirrored RTL dialog.
+- Actual: Timeless skin form input styles override inheritance with `direction: ltr`, causing the search input to remain LTR in RTL mode.
+- Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
+- In the suite: `tests/support/known-issues.js` marks the `rtl` feature group on Timeless desktop rows as an expected failure.
