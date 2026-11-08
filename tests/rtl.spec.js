@@ -11,7 +11,7 @@ const {
 	waitForStableBox
 } = require( './support/uls-helpers' );
 
-test.describe( 'Right-to-Left (RTL) layout (@rtl)', () => {
+test.describe( 'Right-to-Left (RTL) layout @rtl', () => {
 
 	test.beforeEach( ( { uls } ) => {
 		markKnownIssues( test, uls, 'rtl' );
@@ -70,7 +70,7 @@ test.describe( 'Right-to-Left (RTL) layout (@rtl)', () => {
 
 	test( 'No horizontal overflow at 390px viewport in RTL @rtl', async ( { page, gotoWiki, uls } ) => {
 		if ( uls.device !== 'mobile' ) {
-			test.skip( true, 'Applies specifically to mobile 390px viewport' );
+			test.skip( true, 'n/a: Applies specifically to mobile 390px viewport' );
 		}
 
 		await gotoWiki( 'QA ULS search codes', { uselang: 'ar' } );
