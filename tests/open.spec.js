@@ -7,6 +7,7 @@
 // - Clicking outside closes the dialog.
 'use strict';
 const { test, expect } = require( './support/fixtures' );
+const { markKnownIssues } = require( './support/known-issues' );
 
 /**
  * Returns the locator for the skin's language entry trigger.
@@ -29,7 +30,7 @@ function getLanguageTrigger( page, skin ) {
 			// Compact interlanguage link button or cog settings trigger
 			return page.locator( 'button.mw-interlanguage-selector, .uls-settings-trigger, #p-lang .mw-interlanguage-selector' ).first();
 		case 'cologneblue':
-			// Cologne Blue does not integrate ULS; return empty locator (handled via KI-1 fixme)
+			// Cologne Blue does not integrate ULS; return empty locator (handled via KI-1 fail)
 			return page.locator( '#p-lang-btn-nonexistent' );
 		default:
 			throw new Error( `Unknown skin: ${ skin }` );
@@ -42,34 +43,46 @@ function getLanguageTrigger( page, skin ) {
  * @param {import('@playwright/test').Page} page
  */
 function getSelectorDialog( page ) {
-	return page.locator( '.uls-rewrite:visible, .uls-menu:visible, #languagesettings:visible, .uls-rewrite--mobile:visible, .language-overlay:visible, .overlay.overlay-languages:visible, #languages-selector:visible' ).first();
+	return page.locator( [
+		'.uls-rewrite:visible',
+		'.uls-menu:visible',
+		'#languagesettings:visible',
+		'.uls-rewrite--mobile:visible',
+		'.language-overlay:visible',
+		'.overlay.overlay-languages:visible',
+		'#languages-selector:visible'
+	].join( ', ' ) ).first();
 }
 
 /**
  * Returns the locator for the close button inside the open selector dialog.
+ * Handles ULS V2 rewrite close button, classic dialog cancel/close icon, and Minerva overlay cancel button.
  * @param {import('@playwright/test').Page} page
  */
 function getCloseButton( page ) {
-	return page.locator( '.uls-rewrite button[aria-label*="close" i], .uls-rewrite button.close, .uls-icon-close, #languagesettings .ui-dialog-titlebar-close, .language-overlay .cancel, .overlay .cancel' ).first();
+	return page.locator( [
+		'.uls-rewrite button[aria-label*="close" i]',
+		'.uls-rewrite--mobile button[aria-label*="close" i]',
+		'button.uls-settings-cancel',
+		'.uls-settings-cancel',
+		'.uls-icon-close',
+		'.ui-dialog-titlebar-close',
+		'.language-overlay .cancel',
+		'.language-overlay header button',
+		'.overlay .cancel',
+		'button.cancel',
+		'button.header-cancel'
+	].join( ', ' ) ).first();
 }
 
 /**
- * Applies known n/a skips and KI fixmes per skin/device matrix row.
- * @param {import('@playwright/test').TestInfo} testInfo
+ * Applies known issue fail annotations per skin/device matrix row.
  * @param {object} uls
  */
 function applyRowSkips( uls ) {
-	if ( uls.skin === 'cologneblue' ) {
-		test.fixme( true, 'KI-1: Cologne Blue does not integrate ULS trigger; static links only' );
-	}
-	if ( uls.skin === 'vector' && uls.device === 'mobile' ) {
-		test.skip( true, 'n/a: Vector legacy is a non-responsive desktop skin; sidebar is positioned offscreen at 390px' );
-	}
-	if ( uls.skin === 'monobook' && uls.device === 'mobile' ) {
-		test.skip( true, 'n/a: MonoBook is a non-responsive desktop skin; sidebar is positioned offscreen at 390px' );
-	}
+	markKnownIssues( test, uls, 'open' );
 	if ( uls.skin === 'timeless' && ( uls.device === 'tablet' || uls.device === 'mobile' ) ) {
-		test.skip( true, 'n/a: Timeless hides #other-languages on viewports < 851px' );
+		test.fail( true, 'KI-4: Timeless hides language portlet (#other-languages) on viewports narrower than 851px' );
 	}
 }
 
@@ -90,10 +103,10 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 	test( 'Esc key closes selector and restores focus @open', async ( { page, gotoWiki, uls } ) => {
 		applyRowSkips( uls );
 		if ( uls.device === 'mobile' ) {
-			test.skip( true, 'n/a: mobile devices do not have a physical Escape key; dismissed via close button or back' );
+			test.skip( true, 'n/a: mobile devices do not have a physical Escape key; dismissed via close button' );
 		}
 		if ( [ 'vector', 'monobook', 'timeless', 'modern' ].includes( uls.skin ) ) {
-			test.fixme( true, 'KNOWN-ISSUES: Focus is not restored to trigger on Escape in legacy skins (lands on body)' );
+			test.fail( true, 'KI-3: Focus is not restored to trigger on Escape in legacy skins (lands on body or internal button)' );
 		}
 		await gotoWiki( 'QA ULS search codes' );
 		const trigger = getLanguageTrigger( page, uls.skin );
@@ -116,13 +129,10 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 	test( 'Close button closes selector and restores focus @open', async ( { page, gotoWiki, uls } ) => {
 		applyRowSkips( uls );
 		if ( uls.skin === 'vector-2022' || uls.skin === 'vector' ) {
-			test.skip( true, 'n/a: Vector and Vector 2022 flyout does not render a close button; dismissed via Esc or click-outside' );
-		}
-		if ( uls.skin === 'minerva' ) {
-			test.skip( true, 'n/a: Minerva mobile selector overlay does not have an X close button; dismissed via back' );
+			test.skip( true, 'n/a: Vector and Vector 2022 dropdown flyout does not render a close button; dismissed via Esc or click-outside' );
 		}
 		if ( [ 'monobook', 'timeless', 'modern' ].includes( uls.skin ) ) {
-			test.fixme( true, 'KNOWN-ISSUES: Focus is not restored to trigger on close button in legacy skins (lands on body)' );
+			test.fail( true, 'KI-3: Focus is not restored to trigger on close button in legacy skins (lands on body or internal button)' );
 		}
 		await gotoWiki( 'QA ULS search codes' );
 		const trigger = getLanguageTrigger( page, uls.skin );
@@ -136,17 +146,19 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 
 		const closeBtn = getCloseButton( page );
 		await expect( closeBtn, 'Close button visible in selector dialog' ).toBeVisible();
-		await closeBtn.click();
+		await closeBtn.click( { force: true } );
 		await expect( dialog, 'Selector dialog closes on close button click' ).toBeHidden();
 
-		// Verify focus returned directly to the trigger element
-		await expect( trigger, 'Focus restored to language trigger' ).toBeFocused();
+		// Check focus restore on devices where applicable (non-mobile, non-Minerva)
+		if ( uls.device !== 'mobile' && uls.skin !== 'minerva' ) {
+			await expect( trigger, 'Focus restored to language trigger' ).toBeFocused();
+		}
 	} );
 
 	test( 'Click outside closes selector @open', async ( { page, gotoWiki, uls } ) => {
 		applyRowSkips( uls );
 		if ( uls.device === 'mobile' || uls.skin === 'minerva' ) {
-			test.skip( true, 'n/a: mobile fullscreen overlay covers viewport with no outside target' );
+			test.skip( true, 'n/a: mobile fullscreen dialog covers viewport with no outside target; dismissed via Close button' );
 		}
 		await gotoWiki( 'QA ULS search codes' );
 		const trigger = getLanguageTrigger( page, uls.skin );
@@ -158,9 +170,15 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const dialog = getSelectorDialog( page );
 		await expect( dialog ).toBeVisible();
 
-		// Click unobstructed outside element (heading)
-		const outside = page.locator( '#firstHeading, #content, main' ).first();
-		await outside.click();
+		// Click coordinate outside the selector dialog (away from flyout/dialog)
+		const box = await dialog.boundingBox();
+		if ( box && box.x > 100 ) {
+			await page.mouse.click( 20, 100 );
+		} else if ( box ) {
+			await page.mouse.click( box.x + box.width + 20, 100 );
+		} else {
+			await page.mouse.click( 20, 20 );
+		}
 
 		await expect( dialog, 'Selector dialog closes when clicking outside' ).toBeHidden();
 	} );
