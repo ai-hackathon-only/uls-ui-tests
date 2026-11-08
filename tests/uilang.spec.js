@@ -78,7 +78,13 @@ test.describe( 'Special:Preferences language field @prefs', () => {
 		await gotoWiki( 'Special:Preferences' );
 		// Mobile view (Minerva): core lists the sections (.mw-mobile-prefs-sections)
 		// and opens each in a window; the field is in "User profile".
+		// nav-mobile.js infuses the list after DOM ready and only then listens for
+		// clicks; a click before that is lost, so wait for OO.ui.infuse() first.
 		if ( uls.skin === 'minerva' ) {
+			await page.waitForFunction(
+				() => !!window.$ && !!$( '.mw-mobile-prefs-sections' ).data( 'ooui-infused' ),
+				null, { timeout: 15000 }
+			);
 			await page.locator( '.mw-mobile-prefs-sections' ).getByText( 'User profile' ).first().click();
 		}
 		// Core replaces the <select> with a Codex lookup (mw.widgets.LanguageSelectWidget).
@@ -93,7 +99,13 @@ test.describe( 'Special:Preferences language field @prefs', () => {
 		await input.scrollIntoViewIfNeeded();
 		await input.fill( '' );
 		await page.waitForTimeout( 300 );
+		// The lookup filters locally at once, then re-renders the menu when the
+		// debounced action=languagesearch reply comes back; a click in between can
+		// hit a detached item. Wait for the reply to the full word first.
+		const searched = page.waitForResponse( ( r ) => r.url().includes( 'action=languagesearch' ) &&
+			new URL( r.url() ).searchParams.get( 'search' ) === 'Deutsch', { timeout: 15000 } );
 		await input.pressSequentially( 'Deutsch', { delay: 50 } );
+		await searched;
 		const option = page.getByRole( 'option', { name: 'de · Deutsch', exact: true } );
 		await expect( option, 'a "de · Deutsch" menu item after typing' ).toBeVisible( { timeout: 10000 } );
 		await option.click( { timeout: 5000 } );
