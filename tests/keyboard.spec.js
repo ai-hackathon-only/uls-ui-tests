@@ -102,9 +102,12 @@ test.describe( 'Keyboard accessibility (@keyboard)', () => {
 		await page.route( '**/*', ( route ) => {
 			const url = route.request().url();
 			if ( url.includes( 'wikipedia.org' ) ) {
-				if ( url.includes( 'simple.wikipedia.org' ) ) {
+				if ( !route.request().isNavigationRequest() ) {
+					// Background fetches (prefetch, RelatedArticles API) are not
+					// ULS navigation and must not satisfy the assertion.
+				} else if ( url.includes( 'simple.wikipedia.org' ) ) {
 					interceptedUrl = url;
-				} else if ( route.request().isNavigationRequest() ) {
+				} else {
 					// Only page navigations count; background API fetches
 					// (e.g. RelatedArticles to en.wikipedia.org) are not ULS.
 					unexpectedUrls.push( url );
