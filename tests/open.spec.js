@@ -80,12 +80,6 @@ function getCloseButton( dialog ) {
  */
 function applyRowSkips( uls ) {
 	markKnownIssues( test, uls, 'open' );
-	if ( uls.skin === 'timeless' && ( uls.device === 'tablet' || uls.device === 'mobile' ) ) {
-		test.fail( true, 'KI-4: Timeless hides language portlet (#other-languages) on viewports narrower than 851px' );
-	}
-	if ( uls.skin === 'monobook' && uls.device === 'mobile' ) {
-		test.fail( true, 'KI-5: MonoBook sidebar navigation overlaps language trigger on mobile viewports' );
-	}
 }
 
 test.describe( 'Trigger and selector lifecycle @open', () => {
