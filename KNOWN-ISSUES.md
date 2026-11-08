@@ -48,7 +48,7 @@ Allow-listed in `tests/support/known-errors.js`.
 - Expected: A visible language selector trigger is directly accessible on the screen.
 - Actual: Timeless CSS applies `@media (max-width: 850px) { #other-languages { display: none; } }`, hiding the language trigger portlet unless the user opens the slide-out navigation drawer.
 - Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
-- In the suite: Marked with `test.fail( true, 'KI-4: Timeless hides language portlet on viewports narrower than 851px' )` in `tests/open.spec.js`.
+- In the suite: `tests/support/known-issues.js` marks trigger-based feature groups on Timeless tablet and mobile rows as expected failures.
 
 ## KI-5
 **MonoBook fixed sidebar navigation overlaps and intercepts language trigger on mobile viewports.**

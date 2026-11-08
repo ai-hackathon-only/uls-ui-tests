@@ -110,7 +110,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger ).toBeVisible();
 
-		await trigger.click();
+		await trigger.click( { timeout: 5000 } );
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog ).toBeVisible();
@@ -132,7 +132,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger ).toBeVisible();
 
-		await trigger.click();
+		await trigger.click( { timeout: 5000 } );
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog ).toBeVisible();
@@ -152,7 +152,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger ).toBeVisible();
 
-		await trigger.click();
+		await trigger.click( { timeout: 5000 } );
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog ).toBeVisible();
