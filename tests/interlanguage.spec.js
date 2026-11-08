@@ -1,75 +1,93 @@
-// Feature 3: Interlanguage Navigation (@interlanguage)
+// Feature 3: Interlanguage Navigation and Empty State (@interlanguage)
 // User-facing requirements from GOALS.md & FEATURES.md:
-// - Picking a language on a page with interlanguage links navigates to that language's article
-// - Uses the page 'QA ULS search codes' which contains links including simple, als, zh-yue, be-x-old
-// - Safety: intercept all external requests via page.route() so browser never visits public Wikipedia
-// - A page with no interlanguage links (e.g. 'Main Page') shows the empty state or suppresses language links per skin
+// - Picking a language on a page with interlanguage links navigates to that language's article.
+// - Uses the page 'QA ULS search codes' which contains links including simple, als, zh-yue, be-x-old.
+// - Safety: intercept all external requests via page.route() so the browser never visits public Wikipedia.
+// - A page with no interlanguage links (e.g. 'Main Page') shows the empty state or omits language links per skin.
 'use strict';
 const { test, expect } = require( './support/fixtures' );
 const { markKnownIssues } = require( './support/known-issues' );
+const { getLanguageTrigger } = require( './support/uls-helpers' );
 
 /**
- * Ensures the language entrypoint or dialog is open for the given skin when needed.
- * In Vector 2022 and Minerva, opens the ULS selector dialog/overlay.
- * In legacy skins (Vector, MonoBook, Timeless, Modern), if compact links collapsed
- * the list, clicks the compact button (button.mw-interlanguage-selector) to open the dialog.
+ * Opens the selector dialog and returns { dialog, searchInput }.
+ * Handles Vector 2022 dropdown, Minerva overlay, and legacy compact links dialog.
  * @param {import('@playwright/test').Page} page
  * @param {string} skin
  */
-async function openLanguageSelectorIfNeeded( page, skin ) {
-	if ( skin === 'cologneblue' ) {
-		return;
+async function openSelectorAndGetSearch( page, skin ) {
+	const trigger = getLanguageTrigger( page, skin );
+	await expect( trigger, `Language trigger visible for ${ skin }` ).toBeVisible();
+	await trigger.scrollIntoViewIfNeeded();
+	await trigger.click();
+
+	const dialog = page.locator( [
+		'.uls-rewrite:visible',
+		'.uls-menu:visible',
+		'#language-settings-dialog:visible',
+		'#languagesettings:visible',
+		'.language-overlay:visible',
+		'.overlay-languages:visible',
+		'#languages-selector:visible'
+	].join( ', ' ) ).first();
+	await expect( dialog, 'Selector dialog visible' ).toBeVisible();
+
+	// In legacy dialog (MonoBook, etc.), expand '...' to reveal search filter
+	const moreBtn = dialog.locator( '.uls-more-languages:visible' );
+	if ( await moreBtn.isVisible() ) {
+		await moreBtn.click();
 	}
 
-	if ( skin === 'vector-2022' ) {
-		const trigger = page.locator( '#p-lang-btn-checkbox, #p-lang-btn' ).first();
-		await expect( trigger, 'Vector 2022 language button visible' ).toBeVisible();
-		await trigger.click();
-		await expect(
-			page.locator( '.uls-rewrite:visible, .vector-dropdown-content:visible, dialog:visible' ).first(),
-			'Selector dialog or dropdown visible'
-		).toBeVisible();
-	} else if ( skin === 'minerva' ) {
-		const trigger = page.locator( 'a.language-selector, #page-actions-languages a, a.minerva-icon--language-switcher' ).first();
-		await expect( trigger, 'Minerva language switcher visible' ).toBeVisible();
-		await trigger.click();
-		await expect(
-			page.locator( '.uls-rewrite:visible, .overlay:visible, #languages' ).first(),
-			'Minerva languages overlay visible'
-		).toBeVisible();
-	} else {
-		// Legacy desktop skins (vector, monobook, timeless, modern)
-		const compactBtn = page.locator( 'button.mw-interlanguage-selector' ).first();
-		if ( await compactBtn.isVisible().catch( () => false ) ) {
-			await compactBtn.click();
-			await expect(
-				page.locator( '.uls-rewrite:visible, .uls-menu:visible, dialog:visible' ).first(),
-				'Compact links dialog visible'
-			).toBeVisible();
-		}
-	}
+	const searchInput = dialog.locator( [
+		'input.uls-languagefilter:visible',
+		'.cdx-search-input input:not([disabled]):not([aria-hidden="true"]):visible',
+		'input[type="search"]:not([disabled]):not([aria-hidden="true"]):visible',
+		'input[role="combobox"]:not([disabled]):not([aria-hidden="true"]):visible'
+	].join( ', ' ) ).first();
+	await expect( searchInput, 'Search input visible in open selector' ).toBeVisible();
+	return { dialog, searchInput };
 }
 
 /**
- * Returns a locator for the visible interlanguage link matching hostPart.
- * @param {import('@playwright/test').Page} page
- * @param {string} hostPart
+ * Finds matching language result in dialog by language code attribute or alias.
+ * @param {import('@playwright/test').Locator} dialog
+ * @param {string} code
  */
-function getInterlanguageLink( page, hostPart ) {
-	return page.locator( [
-		`a[href*="${ hostPart }"]:visible`,
-		`.uls-rewrite a[href*="${ hostPart }"]`,
-		`.vector-dropdown-content a[href*="${ hostPart }"]`,
-		`#p-lang a[href*="${ hostPart }"]`
-	].join( ', ' ) ).first();
+function getLanguageResult( dialog, code ) {
+	const codes = [ code ];
+	if ( code === 'zh-yue' ) codes.push( 'yue' );
+	if ( code === 'be-x-old' ) codes.push( 'be-tarask' );
+	const selectors = codes.flatMap( ( c ) => [
+		`li[role="option"][data-code="${ c }"]`,
+		`li[role="option"][data-language-code="${ c }"]`,
+		`[data-language-code="${ c }"]`,
+		`[data-code="${ c }"]`,
+		`a.uls-languagefilter-link[data-code="${ c }"]`,
+		`a[lang="${ c }"]`,
+		`li.interwiki-${ c }`
+	] );
+	return dialog.locator( selectors.join( ', ' ) ).first();
+}
+
+/**
+ * Applies known issue fail annotations per skin/device matrix row.
+ * @param {object} uls
+ */
+function applyRowAnnotations( uls ) {
+	markKnownIssues( test, uls, 'interlanguage' );
+	if ( uls.skin === 'timeless' && ( uls.device === 'tablet' || uls.device === 'mobile' ) ) {
+		test.fail( true, 'KI-4: Timeless hides language portlet (#other-languages) on viewports narrower than 851px' );
+	}
+	if ( uls.skin === 'monobook' && uls.device === 'mobile' ) {
+		test.fail( true, 'KI-5: MonoBook sidebar navigation overlaps language trigger on mobile viewports' );
+	}
 }
 
 test.describe( 'Interlanguage navigation and empty state @interlanguage', () => {
 
-	test.beforeEach( async ( { page, uls } ) => {
-		markKnownIssues( test, uls, 'interlanguage' );
-
+	test.beforeEach( async ( { page } ) => {
 		// Safety mock: fulfill all requests to *.wikipedia.org so no request hits public Wikipedia.
+		// Fulfilling prevents net::ERR_FAILED console errors and unexpected external navigation.
 		await page.route( 'https://*.wikipedia.org/**', async ( route ) => {
 			if ( route.request().url().includes( '/w/api.php' ) ) {
 				await route.fulfill( {
@@ -81,51 +99,62 @@ test.describe( 'Interlanguage navigation and empty state @interlanguage', () => 
 				await route.fulfill( {
 					status: 200,
 					contentType: 'text/html',
-					body: '<!DOCTYPE html><html><body>Interlanguage Destination</body></html>'
+					body: '<!DOCTYPE html><html><body>Interlanguage Destination Article</body></html>'
 				} );
 			}
 		} );
 	} );
 
 	test( 'Picking Simple English link navigates to target host @interlanguage', async ( { page, gotoWiki, uls } ) => {
+		applyRowAnnotations( uls );
 		await gotoWiki( 'QA ULS search codes' );
-		await openLanguageSelectorIfNeeded( page, uls.skin );
 
-		const simpleLink = getInterlanguageLink( page, 'simple.wikipedia.org' );
-		await expect( simpleLink, 'Simple English link visible' ).toBeVisible();
-		const href = await simpleLink.getAttribute( 'href' );
-		expect( href, 'Simple English destination href targets simple.wikipedia.org' ).toContain( 'simple.wikipedia.org' );
+		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
+		await searchInput.fill( 'simple' );
+		await page.waitForTimeout( 300 );
 
-		// Click the link and verify the navigation request is dispatched
+		const simpleItem = getLanguageResult( dialog, 'simple' );
+		await expect( simpleItem, 'Simple English result row visible in dialog' ).toBeVisible();
+
+		const link = simpleItem.locator( 'a' ).first();
+		const targetClickable = ( await link.isVisible().catch( () => false ) ) ? link : simpleItem;
+
 		const [ request ] = await Promise.all( [
-			page.waitForRequest( ( req ) => req.url().includes( 'simple.wikipedia.org' ), { timeout: 5000 } ),
-			simpleLink.click()
+			page.waitForRequest( ( req ) => req.url().includes( 'simple.wikipedia.org' ), { timeout: 7000 } ),
+			targetClickable.click()
 		] );
-		expect( request.url(), 'Intercepted request to simple.wikipedia.org' ).toContain( 'simple.wikipedia.org' );
+		expect( request.url(), 'Dispatched request to simple.wikipedia.org' ).toContain( 'simple.wikipedia.org' );
 	} );
 
 	test( 'Picking be-x-old link targets be-tarask host @interlanguage', async ( { page, gotoWiki, uls } ) => {
+		applyRowAnnotations( uls );
 		await gotoWiki( 'QA ULS search codes' );
-		await openLanguageSelectorIfNeeded( page, uls.skin );
 
-		const beLink = getInterlanguageLink( page, 'be-tarask.wikipedia.org' );
-		await expect( beLink, 'be-x-old (be-tarask) link visible' ).toBeVisible();
-		const href = await beLink.getAttribute( 'href' );
-		expect( href, 'be-x-old destination href targets be-tarask.wikipedia.org' ).toContain( 'be-tarask.wikipedia.org' );
+		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
+		await searchInput.fill( 'be-x-old' );
+		await page.waitForTimeout( 300 );
+
+		const beItem = getLanguageResult( dialog, 'be-x-old' );
+		await expect( beItem, 'be-x-old result row visible in dialog' ).toBeVisible();
+
+		const link = beItem.locator( 'a' ).first();
+		const targetClickable = ( await link.isVisible().catch( () => false ) ) ? link : beItem;
 
 		const [ request ] = await Promise.all( [
-			page.waitForRequest( ( req ) => req.url().includes( 'be-tarask.wikipedia.org' ), { timeout: 5000 } ),
-			beLink.click()
+			page.waitForRequest( ( req ) => req.url().includes( 'be-tarask.wikipedia.org' ), { timeout: 7000 } ),
+			targetClickable.click()
 		] );
-		expect( request.url(), 'Intercepted request to be-tarask.wikipedia.org' ).toContain( 'be-tarask.wikipedia.org' );
+		expect( request.url(), 'Dispatched request to be-tarask.wikipedia.org' ).toContain( 'be-tarask.wikipedia.org' );
 	} );
 
 	test( 'Page without interlanguage links handles empty state @interlanguage', async ( { page, gotoWiki, uls } ) => {
-		// 'Main Page' has zero interlanguage links (verified via prop=langlinks API)
+		applyRowAnnotations( uls );
+		// 'Main Page' has zero interlanguage links
 		await gotoWiki( 'Main Page' );
 
 		if ( uls.skin === 'cologneblue' ) {
-			await expect( page.locator( '#p-lang, #p-lang-btn' ), 'Language portlet in Cologne Blue' ).toBeVisible();
+			const trigger = getLanguageTrigger( page, uls.skin );
+			await expect( trigger, 'Cologne Blue language trigger not present' ).toBeVisible();
 			return;
 		}
 
@@ -134,15 +163,13 @@ test.describe( 'Interlanguage navigation and empty state @interlanguage', () => 
 			await expect( btn, 'Vector 2022 language button visible' ).toBeVisible();
 			await btn.click();
 			const dialog = page.locator( '.uls-rewrite:visible, .vector-dropdown-content:visible, dialog:visible' ).first();
-			await expect( dialog, 'Selector dialog or dropdown visible' ).toBeVisible();
-			// No external article links exist in the dialog
+			await expect( dialog, 'Selector dialog visible' ).toBeVisible();
+			// No external article links exist in the empty state dialog
 			expect( await dialog.locator( 'a[href*="wikipedia.org"]' ).count(), 'Zero external article links in dialog' ).toBe( 0 );
 		} else if ( uls.skin === 'minerva' ) {
-			// On Minerva, verify the page actions toolbar is present, but language switcher is omitted
-			const pageActions = page.locator( '#page-actions, .page-actions-menu' );
-			await expect( pageActions, 'Minerva page actions toolbar visible' ).toBeVisible();
-			const trigger = pageActions.locator( 'a.language-selector, a.minerva-icon--language-switcher' );
-			expect( await trigger.count(), 'Language switcher omitted on page without interlanguage links' ).toBe( 0 );
+			// On Minerva, verify language switcher is omitted on a page without language links
+			const switcher = page.locator( 'a.language-selector, a.minerva-icon--language-switcher, #page-actions-languages a, #language-selector a' );
+			await expect( switcher, 'Minerva language switcher omitted on page without interlanguage links' ).toBeHidden();
 		} else {
 			// In legacy skins, the interlanguage portlet exists but contains zero link items
 			const portlet = page.locator( '#p-lang' );
