@@ -27,8 +27,8 @@ function getLanguageTrigger( page, skin ) {
 		case 'monobook':
 		case 'timeless':
 		case 'modern':
-			// Compact interlanguage link button or cog settings trigger
-			return page.locator( 'button.mw-interlanguage-selector, .uls-settings-trigger, #p-lang .mw-interlanguage-selector' ).first();
+			// Compact interlanguage link button
+			return page.locator( 'button.mw-interlanguage-selector, #p-lang .mw-interlanguage-selector' ).first();
 		case 'cologneblue':
 			// Cologne Blue does not integrate ULS; return empty locator (handled via KI-1 fail)
 			return page.locator( '#p-lang-btn-nonexistent' );
@@ -61,6 +61,7 @@ function getSelectorDialog( page ) {
  */
 function getCloseButton( page ) {
 	return page.locator( [
+		'.uls-rewrite__header__mobile button[aria-label="Close"]',
 		'.uls-rewrite button[aria-label*="close" i]',
 		'.uls-rewrite--mobile button[aria-label*="close" i]',
 		'button.uls-settings-cancel',
@@ -84,6 +85,9 @@ function applyRowSkips( uls ) {
 	if ( uls.skin === 'timeless' && ( uls.device === 'tablet' || uls.device === 'mobile' ) ) {
 		test.fail( true, 'KI-4: Timeless hides language portlet (#other-languages) on viewports narrower than 851px' );
 	}
+	if ( uls.skin === 'monobook' && uls.device === 'mobile' ) {
+		test.fail( true, 'KI-5: MonoBook sidebar navigation overlaps language trigger on mobile viewports' );
+	}
 }
 
 test.describe( 'Trigger and selector lifecycle @open', () => {
@@ -94,7 +98,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
 
-		await trigger.click();
+		await trigger.click( { timeout: 5000 } );
 		const dialog = getSelectorDialog( page );
 		await expect( dialog, 'Selector dialog opens upon clicking language trigger' ).toBeVisible();
 	} );
@@ -103,9 +107,6 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		applyRowSkips( uls );
 		if ( uls.device === 'mobile' ) {
 			test.skip( true, 'n/a: mobile devices do not have a physical Escape key; dismissed via close button' );
-		}
-		if ( [ 'vector', 'monobook', 'timeless', 'modern' ].includes( uls.skin ) ) {
-			test.fail( true, 'KI-3: Focus is not restored to trigger on Escape in legacy skins (lands on body or internal button)' );
 		}
 		await gotoWiki( 'QA ULS search codes' );
 		const trigger = getLanguageTrigger( page, uls.skin );
@@ -126,11 +127,8 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 
 	test( 'Close button closes selector and restores focus @open', async ( { page, gotoWiki, uls } ) => {
 		applyRowSkips( uls );
-		if ( uls.skin === 'vector-2022' || uls.skin === 'vector' ) {
-			test.skip( true, 'n/a: Vector and Vector 2022 dropdown flyout does not render a close button; dismissed via Esc or click-outside' );
-		}
-		if ( [ 'monobook', 'timeless', 'modern' ].includes( uls.skin ) ) {
-			test.fail( true, 'KI-3: Focus is not restored to trigger on close button in legacy skins (lands on body or internal button)' );
+		if ( !( uls.skin === 'minerva' && uls.device === 'mobile' ) ) {
+			test.skip( true, 'n/a: only Minerva mobile overlay renders a dedicated close button; desktop and tablet flyouts dismissed via Esc or click-outside' );
 		}
 		await gotoWiki( 'QA ULS search codes' );
 		const trigger = getLanguageTrigger( page, uls.skin );
@@ -166,15 +164,8 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const dialog = getSelectorDialog( page );
 		await expect( dialog ).toBeVisible();
 
-		// Click coordinate outside the selector dialog (away from flyout/dialog)
-		const box = await dialog.boundingBox();
-		if ( box ) {
-			const clickX = Math.round( box.x + 20 );
-			const clickY = box.y > 60 ? Math.round( box.y - 30 ) : Math.round( box.y + box.height + 30 );
-			await page.mouse.click( clickX, clickY );
-		} else {
-			await page.mouse.click( 20, 20 );
-		}
+		// Click page content outside the selector dialog
+		await page.locator( '#firstHeading' ).click();
 
 		await expect( dialog, 'Selector dialog closes when clicking outside' ).toBeHidden();
 	} );

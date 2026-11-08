@@ -38,21 +38,6 @@ Not a ULS bug. MediaWiki's EventLogging / WikimediaEvents sends telemetry to
 development wiki, resulting in `net::ERR_CONNECTION_REFUSED [http://localhost:8192/v1/events]`.
 Allow-listed in `tests/support/known-errors.js`.
 
-## KI-3
-**Focus is not restored to the language trigger upon selector dismissal in legacy skins.**
-
-- Skins: `vector`, `monobook`, `timeless`, `modern`. Devices: desktop, tablet. Users: anonymous and logged in.
-- Steps:
-  1. Open page `QA ULS search codes` with a legacy skin (`useskin=vector`, `monobook`, `timeless`, or `modern`).
-  2. Click the language trigger (`button.mw-interlanguage-selector`).
-  3. Close the selector dialog via Esc key or close button (`.uls-icon-close` / `.ui-dialog-titlebar-close`).
-  4. Inspect `document.activeElement`.
-- Expected: Focus is restored to `button.mw-interlanguage-selector` that opened the dialog.
-- Actual: Focus is not restored to the trigger element (active element remains on an internal button or body).
-- Likely cause: Legacy ULS popup / jQuery UI dialog implementation does not cache the active trigger before open or invoke `.focus()` on dismissal.
-- Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
-- In the suite: Marked with `test.fail( true, 'KI-3: Focus is not restored to trigger on dialog dismiss in legacy skins' )` in `tests/open.spec.js`.
-
 ## KI-4
 **Timeless hides language selector trigger in collapsed navigation on viewports narrower than 851px.**
 
@@ -64,3 +49,16 @@ Allow-listed in `tests/support/known-errors.js`.
 - Actual: Timeless CSS applies `@media (max-width: 850px) { #other-languages { display: none; } }`, hiding the language trigger portlet unless the user opens the slide-out navigation drawer.
 - Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
 - In the suite: Marked with `test.fail( true, 'KI-4: Timeless hides language portlet on viewports narrower than 851px' )` in `tests/open.spec.js`.
+
+## KI-5
+**MonoBook fixed sidebar navigation overlaps and intercepts language trigger on mobile viewports.**
+
+- Skins: `monobook`. Devices: mobile (390px). Users: anonymous and logged in.
+- Steps:
+  1. Open page `QA ULS search codes` with MonoBook (`useskin=monobook`) on a mobile viewport (390 × 844).
+  2. Locate language trigger (`button.mw-interlanguage-selector`).
+  3. Attempt to click trigger.
+- Expected: Trigger is actionable and opens the language selector.
+- Actual: MonoBook's fixed-position desktop sidebar navigation (`#column-one`, `#p-navigation`) overlaps `#p-lang`, intercepting pointer events.
+- Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
+- In the suite: Marked with `test.fail( true, 'KI-5: MonoBook sidebar navigation overlaps language trigger on mobile viewports' )` in `tests/open.spec.js`.
