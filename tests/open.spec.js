@@ -8,6 +8,7 @@
 'use strict';
 const { test, expect } = require( './support/fixtures' );
 const { markKnownIssues } = require( './support/known-issues' );
+const { saveShot } = require( './support/saved-run' );
 
 /**
  * Returns the locator for the skin's language entry trigger.
@@ -84,15 +85,20 @@ function applyRowSkips( uls ) {
 
 test.describe( 'Trigger and selector lifecycle @open', () => {
 
-	test( 'Language button is visible and opens selector @open', async ( { page, gotoWiki, uls } ) => {
+	test( 'Language button is visible and opens selector @open', async ( { page, gotoWiki, uls }, testInfo ) => {
 		applyRowSkips( uls );
-		await gotoWiki( 'QA ULS search codes' );
-		const trigger = getLanguageTrigger( page, uls.skin );
-		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
+		try {
+			await gotoWiki( 'QA ULS search codes' );
+			const trigger = getLanguageTrigger( page, uls.skin );
+			await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
 
-		await trigger.click();
-		const dialog = getSelectorDialog( page );
-		await expect( dialog, 'Selector dialog opens upon clicking language trigger' ).toBeVisible();
+			await trigger.click();
+			const dialog = getSelectorDialog( page );
+			await expect( dialog, 'Selector dialog opens upon clicking language trigger' ).toBeVisible();
+		} finally {
+			// ULS_SHOTS=1: one shot per row for compare (no-op otherwise).
+			await saveShot( page, testInfo );
+		}
 	} );
 
 	test( 'Esc key closes selector and restores focus @open', async ( { page, gotoWiki, uls } ) => {

@@ -64,4 +64,23 @@ function writeSavedRun( name, data ) {
 	return dir;
 }
 
-module.exports = { FORMAT, runName, runDir, suiteState, filters, writeSavedRun };
+// ULS_SHOTS=1 with ULS_RUN: save the viewport as runs/<name>/shots/<row>.png.
+// Called once per row by the @open test, in a finally block, so a row whose
+// selector did not open still gets a shot of what the page showed.
+// Without both variables it does nothing (the normal run takes no shots).
+async function saveShot( page, testInfo ) {
+	const name = runName();
+	if ( !name || process.env.ULS_SHOTS !== '1' || page.isClosed() ) {
+		return null;
+	}
+	const file = path.join( runDir( name ), 'shots', `${ testInfo.project.name }.png` );
+	fs.mkdirSync( path.dirname( file ), { recursive: true } );
+	try {
+		await page.screenshot( { path: file, timeout: 10000 } );
+		return file;
+	} catch ( e ) {
+		return null;
+	}
+}
+
+module.exports = { FORMAT, runName, runDir, suiteState, filters, writeSavedRun, saveShot };
