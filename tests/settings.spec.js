@@ -65,9 +65,15 @@ test.describe( 'Language settings @settings', () => {
 		markKnownIssues( test, uls, 'settings' );
 		await gotoWiki( PAGE );
 		const dialog = await openSettings( page, uls );
+		// show() opens the Display module first, and DisplaySettings.render()
+		// fills the panel only after setupWebFonts() resolves (async). A click on
+		// Input before that is overwritten by the late Display render (#48), so
+		// wait for the Display panel to be in place before switching.
+		await expect( dialog.locator( '.uls-display-settings' ) ).toBeVisible();
 		await dialog.locator( '#input-panel-trigger' ).click();
 		const panel = dialog.locator( '.uls-input-settings' );
 		await expect( panel ).toBeVisible();
+		await expect( dialog.locator( '.uls-display-settings' ) ).toHaveCount( 0 );
 		// Input tools are on by default; the toggle offers to turn them off.
 		await expect( panel.locator( '.uls-input-toggle-button' ) ).toHaveText( 'Disable input tools' );
 		// English offers the IPA input methods; pick X-SAMPA and apply.
