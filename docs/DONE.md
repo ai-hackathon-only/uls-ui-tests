@@ -22,17 +22,26 @@ The top of the output also warns "No code change between these runs" (same ULS, 
 
 ## Proof 1: no-change pair
 
-Pending: seat 5 runs `nochange-a` (done 14:48, PASSED in 725 s, 1000 tests) and `nochange-b` (started 14:51) under the matrix lock.
+Seat 5 ran both under the `matrix` lock, same ULS (`2b186dc`), core (`f7d0709`), no cookies, `ULS_SHOTS=1`:
 
-Early check: seat 1's `shots-full` (14:22, 722 s) against seat 5's `nochange-a` (14:48, 725 s), same ULS, core and cookies, both with `ULS_SHOTS=1`:
+| Run | Command | Started | Result | Time |
+|---|---|---|---|---|
+| nochange-a | `ULS_RUN=nochange-a ULS_SHOTS=1 npm test` | 14:36 | 1000 tests, 0 unexpected, 184 known issues, 250 n/a, exit 0 | 725 s |
+| nochange-b | `ULS_RUN=nochange-b ULS_SHOTS=1 npm test` | 14:51 | 1000 tests, 0 unexpected, 184 known issues, 250 n/a, exit 0 | 721 s |
+
+Logs: `matrix-seat5-1440.log`, `matrix-seat5-1452.log` in the run folder.
 
 ```
-node bin/compare.js shots-full nochange-a ; echo exit=$?
+node bin/compare.js nochange-a nochange-b ; echo EXIT=$?
+WARNING: Suite commits or working tree state differ (4e4a2d6e (dirty) vs afcab8f4 (dirty)): this includes a test change, not only a ULS code change.
+WARNING: No code change between these runs: ULS commit (2b186dc0...), MediaWiki core commit (f7d0709e...) and QA cookies (none) are identical.
 Summary: 0 changed row(s) | new failures: 0 (0 rows) | fixed: 0 (0 rows) | KI now passing: 0 (0 rows) | still failing: 0 (xfail unchanged: 184) | added: 0 | removed: 0 | n/a changes: 0 | recovered (re-login/retry): before 0, after 0
-exit=0
+EXIT=0
 ```
 
-The top warns that the suite commits differ (two clones) and that there is no code change.
+0 changes, so no flaky row to fix. About the first warning: seat 5's clone moved from `4e4a2d6` to `afcab8f` between the runs. `git diff --stat 4e4a2d6 afcab8f` touches only `tests/support/compare-html.js` and `compare-phab.js` (the report code, run after the tests), so the test code was the same in both runs. "Dirty" is the local `COVERAGE.md` that every run rewrites.
+
+An extra pair from two clones, seat 1's `shots-full` (14:22, 722 s) against `nochange-a`, also gives 0 changed rows, exit 0.
 
 ## Proof 2: cookie pair
 
