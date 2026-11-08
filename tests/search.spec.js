@@ -101,15 +101,18 @@ function getLanguageResult( dialog, code ) {
 // query runs as its own step with soft assertions, so every failing query is still
 // listed in the report. Eight separate tests spent ~2200 s of a 20 min full run
 // reloading the same page.
+// Each step's `absent` is the code the previous step left on screen, and it is
+// checked first: the step waits until the debounced search has replaced the old
+// list, so a stale list can't make the step pass.
 const QUERIES = [
 	{ step: 'English name "German"', query: 'German', code: 'de', text: /Deutsch|German/, absent: 'ja' },
-	{ step: 'autonym "Deutsch"', query: 'Deutsch', code: 'de', text: /Deutsch|German/, absent: 'ja' },
-	{ step: 'language code "de"', query: 'de', code: 'de', text: /Deutsch|German/, absent: 'ja' },
-	{ step: 'language code "zh-yue"', query: 'zh-yue', code: 'zh-yue', text: /粵語|Cantonese/, absent: 'de' },
-	{ step: 'language code "be-x-old"', query: 'be-x-old', code: 'be-x-old', text: /тарашкевіца|be-tarask/, absent: 'de' },
-	{ step: 'typo "Germn"', query: 'Germn', code: 'de', text: /Deutsch|German/, absent: 'ja' },
 	// Japanese (ja) is in the QA page langlinks; its autonym is 日本語.
-	{ step: 'non-Latin script "日本語"', query: '日本語', code: 'ja', text: /日本語|Japanese/, absent: 'de' }
+	{ step: 'non-Latin script "日本語"', query: '日本語', code: 'ja', text: /日本語|Japanese/, absent: 'de' },
+	{ step: 'autonym "Deutsch"', query: 'Deutsch', code: 'de', text: /Deutsch|German/, absent: 'ja' },
+	{ step: 'language code "zh-yue"', query: 'zh-yue', code: 'zh-yue', text: /粵語|Cantonese/, absent: 'de' },
+	{ step: 'language code "de"', query: 'de', code: 'de', text: /Deutsch|German/, absent: 'zh-yue' },
+	{ step: 'language code "be-x-old"', query: 'be-x-old', code: 'be-x-old', text: /тарашкевіца|be-tarask/, absent: 'de' },
+	{ step: 'typo "Germn"', query: 'Germn', code: 'de', text: /Deutsch|German/, absent: 'be-x-old' }
 ];
 
 test.describe( 'Language search functionality @search', () => {
@@ -125,11 +128,11 @@ test.describe( 'Language search functionality @search', () => {
 		for ( const q of QUERIES ) {
 			await test.step( `Search by ${ q.step }`, async () => {
 				await searchInput.fill( q.query );
+				await expect.soft( getLanguageResult( dialog, q.absent ),
+					`Previous result ${ q.absent } is gone for "${ q.query }"` ).toBeHidden();
 				const item = getLanguageResult( dialog, q.code );
 				await expect.soft( item, `"${ q.query }" shows ${ q.code } in the results` ).toBeVisible();
 				await expect.soft( item ).toContainText( q.text );
-				await expect.soft( getLanguageResult( dialog, q.absent ),
-					`Non-matching language ${ q.absent } is hidden for "${ q.query }"` ).toBeHidden();
 			} );
 		}
 
