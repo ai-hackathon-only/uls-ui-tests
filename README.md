@@ -123,8 +123,10 @@ test( 'Esc closes the selector @open', async ( { page, gotoWiki, uls } ) => {
 - `uls` holds `{ skin, device, user }` for the row.
 - For a feature a skin does not have: `test.skip( cond, 'n/a: <reason>' )`.
 - For a real ULS bug: keep the assertion, add an entry to `KNOWN-ISSUES.md`, and mark
-  the test `test.fail( cond, 'KI-<n>: <short title>' )`. Never weaken an assertion
-  to make a test pass, and never add retries.
+  the test `test.fail( cond, 'KI-<n>: <short title>' )`. For a bug that hits many
+  tests, add it to `tests/support/known-issues.js` and call
+  `markKnownIssues( test, uls, '<group>' )` at the start of each test. Never weaken an
+  assertion to make a test pass, and never add retries.
 - Each test fails on console errors and failed requests (status 400 or higher). Known
   ones go in `tests/support/known-errors.js` with their `KI-<n>`.
 - Show that a new test can fail: break its selector locally, run it, check it goes red.
