@@ -9,34 +9,7 @@
 'use strict';
 const { test, expect } = require( './support/fixtures' );
 const { markKnownIssues } = require( './support/known-issues' );
-
-/**
- * Returns the locator for the skin's language entry trigger.
- * @param {import('@playwright/test').Page} page
- * @param {string} skin
- */
-function getLanguageTrigger( page, skin ) {
-	switch ( skin ) {
-		case 'vector-2022':
-			return page.locator( '#p-lang-btn-checkbox' );
-		case 'minerva':
-			return page.locator( 'a.language-selector, #page-actions-languages a, a.minerva-icon--language-switcher' ).first();
-		default:
-			return page.locator( 'button.mw-interlanguage-selector' ).first();
-	}
-}
-
-/**
- * Returns the locator for the open language selector dialog.
- * @param {import('@playwright/test').Page} page
- */
-function getSelectorDialog( page ) {
-	return page.locator( [
-		'.uls-rewrite:visible',
-		'.language-overlay:visible',
-		'#languages-selector:visible'
-	].join( ', ' ) ).first();
-}
+const { getLanguageTrigger, getSelectorDialog } = require( './support/uls-helpers' );
 
 /**
  * Applies known issue fail annotations and matrix row applicability.
@@ -78,7 +51,7 @@ test.describe( 'Suggested and previously used languages @suggested', () => {
 
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
-		await trigger.click();
+		await trigger.click( { timeout: 5000 } );
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog, 'Selector dialog visible' ).toBeVisible();
@@ -96,7 +69,7 @@ test.describe( 'Suggested and previously used languages @suggested', () => {
 		await expect( trigger, 'Returned to page and trigger is visible' ).toBeVisible();
 
 		// Reopen selector
-		await trigger.click();
+		await trigger.click( { timeout: 5000 } );
 		const reopenedDialog = getSelectorDialog( page );
 		await expect( reopenedDialog, 'Reopened selector dialog visible' ).toBeVisible();
 
@@ -115,7 +88,7 @@ test.describe( 'Suggested and previously used languages @suggested', () => {
 
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
-		await trigger.click();
+		await trigger.click( { timeout: 5000 } );
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog, 'Selector dialog visible' ).toBeVisible();
@@ -144,7 +117,7 @@ test.describe( 'Suggested and previously used languages @suggested', () => {
 
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
-		await trigger.click();
+		await trigger.click( { timeout: 5000 } );
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog, 'Selector dialog visible' ).toBeVisible();
