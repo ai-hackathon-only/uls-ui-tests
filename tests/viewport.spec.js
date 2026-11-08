@@ -4,19 +4,19 @@
 // - Works by touch tap on mobile and tablet touch devices.
 'use strict';
 const { test, expect } = require( './support/fixtures' );
+const { markKnownIssues } = require( './support/known-issues' );
 const {
 	getLanguageTrigger,
 	getSelectorDialog,
 	openSelector,
+	waitForStableBox,
 	getLanguageOption
 } = require( './support/uls-helpers' );
 
 test.describe( 'Small screens & viewport responsiveness (@viewport)', () => {
 
 	test.beforeEach( ( { uls } ) => {
-		if ( uls.skin === 'cologneblue' ) {
-			test.fail( true, 'KI-1: Cologne Blue has no ULS language button' );
-		}
+		markKnownIssues( test, uls, 'small-screen' );
 	} );
 
 	test( 'Selector fits mobile and tablet viewport without horizontal scroll @viewport', async ( { page, gotoWiki, uls } ) => {
@@ -27,9 +27,7 @@ test.describe( 'Small screens & viewport responsiveness (@viewport)', () => {
 		await gotoWiki( 'QA ULS search codes' );
 
 		const dialog = await openSelector( page, uls.skin );
-
-		// Wait for animation and rendering to settle
-		await page.waitForTimeout( 300 );
+		await waitForStableBox( dialog );
 
 		// Check document has no horizontal scrollbar/overflow
 		const hasOverflow = await page.evaluate( () => {
@@ -71,9 +69,7 @@ test.describe( 'Small screens & viewport responsiveness (@viewport)', () => {
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog, 'Selector opens upon touch tap' ).toBeVisible();
-
-		// Wait for dialog animations
-		await page.waitForTimeout( 300 );
+		await waitForStableBox( dialog );
 
 		// Assert language item is visible and tap it
 		const languageItem = getLanguageOption( dialog, 'de' );
