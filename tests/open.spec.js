@@ -90,7 +90,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
 
-		await trigger.click( { timeout: 5000 } );
+		await trigger.click();
 		const dialog = getSelectorDialog( page );
 		await expect( dialog, 'Selector dialog opens upon clicking language trigger' ).toBeVisible();
 	} );
@@ -104,7 +104,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger ).toBeVisible();
 
-		await trigger.click( { timeout: 5000 } );
+		await trigger.click();
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog ).toBeVisible();
@@ -126,7 +126,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger ).toBeVisible();
 
-		await trigger.click( { timeout: 5000 } );
+		await trigger.click();
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog ).toBeVisible();
@@ -146,7 +146,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger ).toBeVisible();
 
-		await trigger.click( { timeout: 5000 } );
+		await trigger.click();
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog ).toBeVisible();
