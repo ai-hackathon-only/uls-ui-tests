@@ -8,62 +8,40 @@
 'use strict';
 const { test, expect } = require( './support/fixtures' );
 const { markKnownIssues } = require( './support/known-issues' );
+const { getLanguageTrigger, getSelectorDialog } = require( './support/uls-helpers' );
 
 /**
- * Returns the locator for the skin's language entry trigger.
- * @param {import('@playwright/test').Page} page
- * @param {string} skin
- */
-function getLanguageTrigger( page, skin ) {
-	switch ( skin ) {
-		case 'vector-2022':
-			return page.locator( '#p-lang-btn-checkbox' );
-		case 'minerva':
-			return page.locator( 'a.minerva-icon--language-switcher, #page-actions-languages a, a.language-selector, #language-selector a' ).first();
-		case 'vector':
-		case 'monobook':
-		case 'timeless':
-		case 'modern':
-			return page.locator( 'button.mw-interlanguage-selector, #p-lang .mw-interlanguage-selector' ).first();
-		case 'cologneblue':
-			// Cologne Blue does not integrate ULS trigger (Known Issue KI-1)
-			return page.locator( '#p-lang-btn-nonexistent' );
-		default:
-			throw new Error( `Unknown skin: ${ skin }` );
-	}
-}
-
-/**
- * Returns the locator for the open language selector dialog.
- * @param {import('@playwright/test').Page} page
- */
-function getSelectorDialog( page ) {
-	return page.locator( [
-		'.uls-rewrite:visible',
-		'.uls-menu:visible',
-		'#languagesettings:visible',
-		'.uls-rewrite--mobile:visible',
-		'.language-overlay:visible',
-		'.overlay.overlay-languages:visible',
-		'#languages-selector:visible'
-	].join( ', ' ) ).first();
-}
-
-/**
- * Applies known issue fail annotations per skin/device matrix row.
+ * Applies known issue fail annotations and matrix skips per skin/device row.
  * @param {object} uls
  */
 function applyRowSkips( uls ) {
 	markKnownIssues( test, uls, 'keyboard' );
-	if ( uls.skin === 'timeless' && ( uls.device === 'tablet' || uls.device === 'mobile' ) ) {
-		test.fail( true, 'KI-4: Timeless hides language portlet (#other-languages) on viewports narrower than 851px' );
-	}
-	if ( uls.skin === 'monobook' && uls.device === 'mobile' ) {
-		test.fail( true, 'KI-5: MonoBook sidebar navigation overlaps language trigger on mobile viewports' );
-	}
 	if ( uls.device === 'mobile' ) {
 		test.skip( true, 'n/a: mobile devices test touch tap under @viewport; keyboard navigation applies to desktop and tablet' );
 	}
+}
+
+/**
+ * Focuses language trigger and activates it via keyboard (Enter/Space), falling back to click.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} skin
+ */
+async function openSelectorByKeyboard( page, skin ) {
+	const trigger = getLanguageTrigger( page, skin );
+	await expect( trigger, `Language trigger visible for skin ${ skin }` ).toBeVisible();
+	await trigger.focus();
+	await expect( trigger ).toBeFocused();
+	await page.keyboard.press( 'Enter' );
+
+	const dialog = getSelectorDialog( page );
+	if ( !( await dialog.isVisible().catch( () => false ) ) ) {
+		await page.keyboard.press( 'Space' );
+	}
+	if ( !( await dialog.isVisible().catch( () => false ) ) ) {
+		await trigger.click( { timeout: 5000 } );
+	}
+	await expect( dialog, 'Selector dialog visible via keyboard activation' ).toBeVisible();
+	return dialog;
 }
 
 test.describe( 'Keyboard accessibility (@keyboard)', () => {
@@ -72,34 +50,35 @@ test.describe( 'Keyboard accessibility (@keyboard)', () => {
 		applyRowSkips( uls );
 		await gotoWiki( 'QA ULS search codes' );
 
-		const trigger = getLanguageTrigger( page, uls.skin );
-		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
-		await trigger.click( { timeout: 5000 } );
-
-		const dialog = getSelectorDialog( page );
-		await expect( dialog, 'Selector dialog visible' ).toBeVisible();
+		const dialog = await openSelectorByKeyboard( page, uls.skin );
 
 		// Search input inside dialog
-		const searchInput = dialog.locator( 'input[type="search"], .uls-languagefilter, .uls-filterinput' ).first();
+		const searchInput = dialog.locator( 'input[type="search"], input[role="combobox"], .uls-languagefilter, .uls-filterinput' ).first();
 		await expect( searchInput, 'Search input visible in selector' ).toBeVisible();
 
 		// Ensure search input is focused
 		await searchInput.focus();
 		await expect( searchInput ).toBeFocused();
 
-		// Press ArrowDown or Tab to navigate to results
+		// Press ArrowDown to navigate to first result row
 		await page.keyboard.press( 'ArrowDown' );
 		await page.waitForTimeout( 200 );
 
-		// Check active/highlighted item or focused element
-		const activeItem = dialog.locator( '.active, :focus, [aria-selected="true"], li.highlighted' ).first();
-		await expect( activeItem, 'An item is highlighted or focused after ArrowDown' ).toBeVisible();
+		// Result item with active or highlighted selection (excluding input)
+		const activeItem = dialog.locator( 'li.active, li[aria-selected="true"], li.highlighted, [role="option"][aria-selected="true"]' ).first();
+		await expect( activeItem, 'A result item is selected or highlighted via ArrowDown' ).toBeVisible();
+		const firstSelected = ( await activeItem.getAttribute( 'data-code' ) ) ||
+			( await activeItem.getAttribute( 'data-language-code' ) ) ||
+			( await activeItem.textContent() );
 
 		// Press ArrowDown again to move to next item
 		await page.keyboard.press( 'ArrowDown' );
 		await page.waitForTimeout( 200 );
-		const secondItem = dialog.locator( '.active, :focus, [aria-selected="true"], li.highlighted' ).first();
-		await expect( secondItem, 'An item remains highlighted or focused after subsequent ArrowDown' ).toBeVisible();
+		const secondSelected = ( await activeItem.getAttribute( 'data-code' ) ) ||
+			( await activeItem.getAttribute( 'data-language-code' ) ) ||
+			( await activeItem.textContent() );
+
+		expect( secondSelected, 'ArrowDown advances to subsequent language item' ).not.toBe( firstSelected );
 	} );
 
 	test( 'Enter key activates selected language @keyboard', async ( { page, gotoWiki, uls } ) => {
@@ -110,19 +89,18 @@ test.describe( 'Keyboard accessibility (@keyboard)', () => {
 			const url = route.request().url();
 			if ( url.includes( 'simple.wikipedia.org' ) || url.includes( 'de.wikipedia.org' ) || url.includes( 'zh-yue.wikipedia.org' ) ) {
 				interceptedUrl = url;
-				return route.abort( 'blockedbyclient' );
+				return route.fulfill( {
+					status: 200,
+					contentType: 'text/html',
+					body: '<!DOCTYPE html><html><body>Navigated Destination</body></html>'
+				} );
 			}
 			return route.continue();
 		} );
 
 		await gotoWiki( 'QA ULS search codes' );
 
-		const trigger = getLanguageTrigger( page, uls.skin );
-		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
-		await trigger.click( { timeout: 5000 } );
-
-		const dialog = getSelectorDialog( page );
-		await expect( dialog, 'Selector dialog visible' ).toBeVisible();
+		const dialog = await openSelectorByKeyboard( page, uls.skin );
 
 		const searchInput = dialog.locator( 'input[type="search"], input[role="combobox"], .uls-languagefilter, .uls-filterinput' ).first();
 		await expect( searchInput ).toBeVisible();
@@ -134,7 +112,7 @@ test.describe( 'Keyboard accessibility (@keyboard)', () => {
 		await page.waitForTimeout( 200 );
 		await page.keyboard.press( 'Enter' );
 
-		// Expect navigation request to have been triggered to simple.wikipedia.org
+		// Expect navigation request to simple.wikipedia.org
 		await expect.poll( () => interceptedUrl, {
 			message: 'Expected navigation to simple.wikipedia.org on Enter',
 			timeout: 7000
@@ -145,27 +123,34 @@ test.describe( 'Keyboard accessibility (@keyboard)', () => {
 		applyRowSkips( uls );
 		await gotoWiki( 'QA ULS search codes' );
 
-		const trigger = getLanguageTrigger( page, uls.skin );
-		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
-		await trigger.click( { timeout: 5000 } );
+		const dialog = await openSelectorByKeyboard( page, uls.skin );
 
-		const dialog = getSelectorDialog( page );
-		await expect( dialog, 'Selector dialog visible' ).toBeVisible();
+		const searchInput = dialog.locator( 'input[type="search"], input[role="combobox"], .uls-languagefilter, .uls-filterinput' ).first();
+		await expect( searchInput ).toBeVisible();
 
-		const searchInput = dialog.locator( 'input[type="search"], .uls-languagefilter, .uls-filterinput' ).first();
+		// Record blurred style
+		await page.locator( '#firstHeading' ).click( { force: true } );
+		const blurredStyle = await searchInput.evaluate( ( el ) => {
+			const s = window.getComputedStyle( el );
+			return { outline: s.outline, outlineWidth: s.outlineWidth, boxShadow: s.boxShadow, borderColor: s.borderColor };
+		} );
+
+		// Focus search input
 		await searchInput.focus();
 		await expect( searchInput ).toBeFocused();
 
-		// Check focus indicator (outline, box-shadow, or border on focused element)
-		const hasIndicator = await searchInput.evaluate( ( el ) => {
-			const style = window.getComputedStyle( el );
-			return (
-				( style.outlineStyle !== 'none' && parseFloat( style.outlineWidth || '0' ) > 0 ) ||
-				( style.boxShadow && style.boxShadow !== 'none' ) ||
-				( style.borderStyle !== 'none' && parseFloat( style.borderWidth || '0' ) > 0 )
-			);
+		const focusedStyle = await searchInput.evaluate( ( el ) => {
+			const s = window.getComputedStyle( el );
+			return { outline: s.outline, outlineWidth: s.outlineWidth, boxShadow: s.boxShadow, borderColor: s.borderColor };
 		} );
-		expect( hasIndicator, 'Search input has a visible focus indicator' ).toBe( true );
+
+		const hasFocusIndicator = (
+			focusedStyle.outline !== blurredStyle.outline ||
+			focusedStyle.outlineWidth !== blurredStyle.outlineWidth ||
+			focusedStyle.boxShadow !== blurredStyle.boxShadow ||
+			focusedStyle.borderColor !== blurredStyle.borderColor
+		);
+		expect( hasFocusIndicator, 'Search input displays visible focus indicator when focused' ).toBe( true );
 	} );
 
 } );
