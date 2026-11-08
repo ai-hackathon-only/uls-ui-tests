@@ -112,6 +112,8 @@ ULS_RUN=before ULS_SHOTS=1 npm test
 # check out the patch on the wiki
 ULS_RUN=after ULS_SHOTS=1 npm test
 npm run compare -- before after
+# Or pass --gerrit <change> to name the Gerrit change and matching patch set in phab-draft.txt:
+npm run compare -- --gerrit 1124851 before after
 ```
 
 You can also compare the old and new language selector on the same ULS checkout with QA cookies:
@@ -191,6 +193,7 @@ tests/support/cookies.js    parses ULS_COOKIES for browser contexts
 tests/support/summary-reporter.js   table, report/index.html, COVERAGE.md
 tests/support/compare-html.js       compare/<before>-vs-<after>/index.html
 tests/support/compare-phab.js       compare/<before>-vs-<after>/phab-draft.txt
+tests/support/gerrit.js             Gerrit REST API reader for --gerrit <change>
 bin/compare.js              compares two saved runs (npm run compare)
 KNOWN-ISSUES.md             ULS bugs the suite found (KI-<n>)
 ```

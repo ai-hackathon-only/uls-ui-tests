@@ -1,0 +1,33 @@
+{
+  "id": "mediawiki%2Fextensions%2FUniversalLanguageSelector~master~I439851a8d2c3b4e5f60718293a4b5c6d7e8f9012",
+  "project": "mediawiki/extensions/UniversalLanguageSelector",
+  "branch": "master",
+  "change_id": "I439851a8d2c3b4e5f60718293a4b5c6d7e8f9012",
+  "subject": "Enable new language selector (V2) across legacy skins",
+  "status": "NEW",
+  "_number": 1124851,
+  "current_revision": "2b186dc023e278d88bf91d4713ae021ce2306515",
+  "revisions": {
+    "c102e9f000000000000000000000000000000001": {
+      "_number": 1,
+      "created": "2026-11-05 10:15:00.000000000",
+      "commit": {
+        "subject": "Enable new language selector (V2) across legacy skins"
+      }
+    },
+    "d8fa0f4000000000000000000000000000000002": {
+      "_number": 2,
+      "created": "2026-11-07 09:30:00.000000000",
+      "commit": {
+        "subject": "Enable new language selector (V2) across legacy skins"
+      }
+    },
+    "2b186dc023e278d88bf91d4713ae021ce2306515": {
+      "_number": 3,
+      "created": "2026-11-06 13:54:00.000000000",
+      "commit": {
+        "subject": "Enable new language selector (V2) across legacy skins"
+      }
+    }
+  }
+}

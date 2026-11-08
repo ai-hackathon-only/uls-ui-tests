@@ -9,6 +9,7 @@ const fs = require( 'fs' );
 const path = require( 'path' );
 const { knownIssuesFor } = require( '../tests/support/known-issues' );
 const { pixelDiff, pixelDiffText } = require( '../tests/support/pixel-diff' );
+const { resolveGerritForCompare, formatGerritSummaryLine } = require( '../tests/support/gerrit' );
 
 const ROOT = path.join( __dirname, '..' );
 
@@ -219,6 +220,22 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 		const msg = `No code change between these runs: ULS commit (${ bRun.ulsCommit || 'unknown' }), MediaWiki core commit (${ bRun.coreCommit || 'unknown' }) and QA cookies (${ bCookies || 'none' }) are identical.`;
 		warnings.push( msg );
 		warningDetails.push( { code: 'no-code-change', message: msg } );
+	}
+
+	let gerrit = opts.gerrit || null;
+	if ( !gerrit && opts.gerritChange ) {
+		try {
+			gerrit = resolveGerritForCompare( opts.gerritChange, bRun, aRun );
+		} catch ( err ) {
+			const msg = `Could not read Gerrit change ${ opts.gerritChange }: ${ err.message }`;
+			warnings.push( msg );
+			warningDetails.push( { code: 'gerrit-unavailable', message: msg, query: opts.gerritChange } );
+		}
+	}
+	if ( gerrit && !gerrit.matched ) {
+		const msg = `Gerrit change ${ gerrit.number != null ? gerrit.number : gerrit.query } (${ gerrit.changeId || 'unknown' }): no patch set commit matches after run ULS commit (${ aRun.ulsCommit || 'unknown' }).`;
+		warnings.push( msg );
+		warningDetails.push( { code: 'gerrit-mismatch', message: msg, gerrit } );
 	}
 
 	const bTests = dedupeTestsById( beforeData.tests );
@@ -466,6 +483,7 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 		beforeDir,
 		afterDir,
 		outDir,
+		gerrit,
 		filtersDiffer,
 		warnings,
 		warningDetails,
@@ -544,9 +562,15 @@ function renderSummaryMd( diff ) {
 		`| Suite commit | \`${ b.suiteCommit || 'unknown' }\`${ b.suiteDirty ? ' (dirty)' : '' } | \`${ a.suiteCommit || 'unknown' }\`${ a.suiteDirty ? ' (dirty)' : '' } |`,
 		`| QA cookies | \`${ b.cookies || 'none' }\` | \`${ a.cookies || 'none' }\` |`,
 		`| Filters | ${ formatFilters( b.filters ) } | ${ formatFilters( a.filters ) } |`,
-		`| Run time | ${ b.seconds != null ? `${ b.seconds } s` : 'n/a' } | ${ a.seconds != null ? `${ a.seconds } s` : 'n/a' } |`,
-		''
+		`| Run time | ${ b.seconds != null ? `${ b.seconds } s` : 'n/a' } | ${ a.seconds != null ? `${ a.seconds } s` : 'n/a' } |`
 	);
+	if ( diff.gerrit ) {
+		const g = diff.gerrit;
+		const bPs = g.beforePatchSet != null ? `Patch set ${ g.beforePatchSet } (\`${ String( g.beforeCommit || '' ).slice( 0, 7 ) }\`)` : 'not from this change';
+		const aPs = g.matched ? `**Patch set ${ g.patchSet }** ([${ g.number || g.query }, PS${ g.patchSet }](${ g.url })) — "${ g.subject }"` : `no matching patch set in [${ g.number || g.query }](${ g.url })`;
+		lines.push( `| Gerrit change | ${ bPs } | ${ aPs } |` );
+	}
+	lines.push( '' );
 
 	lines.push(
 		'## Summary counts',
@@ -669,6 +693,9 @@ function renderConsoleSummary( diff, relOutDir ) {
 	const lines = [
 		`Compare: ${ diff.beforeName } vs ${ diff.afterName }`
 	];
+	if ( diff.gerrit ) {
+		lines.push( formatGerritSummaryLine( diff.gerrit ) );
+	}
 	for ( const w of diff.warnings ) {
 		lines.push( `WARNING: ${ w }` );
 	}
@@ -786,9 +813,17 @@ function fallbackComparePhab( diff ) {
 		'',
 		`- Wiki: ${ a.wiki || b.wiki || 'unknown' }`,
 		`- Before (\`${ diff.beforeName }\`): ULS \`${ b.ulsCommit || 'unknown' }\`, core \`${ b.coreCommit || 'unknown' }\`, cookies \`${ b.cookies || 'none' }\`, suite \`${ b.suiteCommit || 'unknown' }\`, time ${ b.seconds != null ? `${ b.seconds } s` : 'n/a' }`,
-		`- After (\`${ diff.afterName }\`): ULS \`${ a.ulsCommit || 'unknown' }\`, core \`${ a.coreCommit || 'unknown' }\`, cookies \`${ a.cookies || 'none' }\`, suite \`${ a.suiteCommit || 'unknown' }\`, time ${ a.seconds != null ? `${ a.seconds } s` : 'n/a' }`,
-		''
+		`- After (\`${ diff.afterName }\`): ULS \`${ a.ulsCommit || 'unknown' }\`, core \`${ a.coreCommit || 'unknown' }\`, cookies \`${ a.cookies || 'none' }\`, suite \`${ a.suiteCommit || 'unknown' }\`, time ${ a.seconds != null ? `${ a.seconds } s` : 'n/a' }`
 	];
+	if ( diff.gerrit ) {
+		const g = diff.gerrit;
+		if ( g.matched ) {
+			lines.push( `- Gerrit change: [[ ${ g.url } | Gerrit ${ g.number || g.query }, patch set ${ g.patchSet } ]] — "${ g.subject }" (matches after ULS commit \`${ String( g.afterCommit || '' ).slice( 0, 7 ) }\`${ g.beforePatchSet != null ? `; before matches patch set ${ g.beforePatchSet }` : '' })` );
+		} else {
+			lines.push( `- Gerrit change: [[ ${ g.url } | Gerrit ${ g.number || g.query } ]] — "${ g.subject }" (no patch set matches after ULS commit \`${ String( g.afterCommit || '' ).slice( 0, 7 ) }\`)` );
+		}
+	}
+	lines.push( '' );
 
 	if ( diff.warnings.length ) {
 		lines.push( '=== Warnings ===', '' );
@@ -893,13 +928,36 @@ function invokeExternalViews( diff, outDir ) {
 	}
 }
 
+function parseCompareArgs( argv ) {
+	const raw = argv.slice( 2 ).filter( ( a ) => a !== '--' );
+	const positional = [];
+	let gerritChange = null;
+	for ( let i = 0; i < raw.length; i++ ) {
+		const arg = raw[ i ];
+		if ( arg === '--gerrit' ) {
+			if ( i + 1 >= raw.length ) {
+				throw new Error( 'Missing <change> argument after --gerrit' );
+			}
+			gerritChange = raw[ ++i ];
+		} else if ( arg.startsWith( '--gerrit=' ) ) {
+			gerritChange = arg.slice( '--gerrit='.length );
+			if ( !gerritChange ) {
+				throw new Error( 'Missing <change> value in --gerrit=<change>' );
+			}
+		} else {
+			positional.push( arg );
+		}
+	}
+	return { positional, gerritChange };
+}
+
 function runCompareCli( argv ) {
-	const args = argv.slice( 2 ).filter( ( a ) => a !== '--' );
-	if ( args.length < 2 ) {
-		console.error( 'Usage: npm run compare -- <before> <after>' );
+	const { positional, gerritChange } = parseCompareArgs( argv );
+	if ( positional.length < 2 ) {
+		console.error( 'Usage: npm run compare -- [--gerrit <change>] <before> <after>' );
 		return 2;
 	}
-	const [ beforeArg, afterArg ] = args;
+	const [ beforeArg, afterArg ] = positional;
 	const runsDir = process.env.ULS_RUNS_DIR ? path.resolve( process.env.ULS_RUNS_DIR ) : path.join( ROOT, 'runs' );
 	const compareBaseDir = process.env.ULS_COMPARE_DIR ? path.resolve( process.env.ULS_COMPARE_DIR ) : path.join( ROOT, 'compare' );
 
@@ -916,7 +974,8 @@ function runCompareCli( argv ) {
 		afterName: aResolved.name,
 		beforeDir: bResolved.dir,
 		afterDir: aResolved.dir,
-		outDir
+		outDir,
+		gerritChange
 	} );
 
 	fs.writeFileSync( path.join( outDir, 'summary.md' ), renderSummaryMd( diff ) );
@@ -953,6 +1012,7 @@ if ( require.main === module ) {
 module.exports = {
 	resolveRun,
 	loadRun,
+	parseCompareArgs,
 	compareRuns,
 	renderSummaryMd,
 	renderConsoleSummary,

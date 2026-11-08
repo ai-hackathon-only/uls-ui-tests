@@ -107,9 +107,27 @@ function renderComparePhab( diff, outDirArg ) {
 	const lines = [
 		`== ULS UI test comparison: ${ beforeName } vs ${ afterName } ==`,
 		'',
-		`Compared \`${ beforeName }\` (before) against \`${ afterName }\` (after): ${ describeWhatChanged( beforeRun, afterRun ) }.`,
-		''
+		`Compared \`${ beforeName }\` (before) against \`${ afterName }\` (after): ${ describeWhatChanged( beforeRun, afterRun ) }.`
 	];
+
+	if ( diff.gerrit ) {
+		const g = diff.gerrit;
+		const changeLabel = g.number != null ? `change ${ g.number }` : `change ${ g.changeId || g.query }`;
+		if ( g.matched ) {
+			const beforeNote = g.beforePatchSet != null ?
+				`; before run matches patch set ${ g.beforePatchSet } (\`${ shortSha( g.beforeCommit ) }\`)` :
+				'';
+			lines.push(
+				`Gerrit: [[ ${ g.url } | ${ changeLabel }, patch set ${ g.patchSet } ]] — "${ g.subject }" (matches after ULS commit \`${ shortSha( g.afterCommit ) }\`${ beforeNote }).`
+			);
+		} else {
+			lines.push(
+				`Gerrit: [[ ${ g.url } | ${ changeLabel } ]] — "${ g.subject }" (no patch set in this change matches after ULS commit \`${ shortSha( g.afterCommit ) }\`; checked ${ g.totalPatchSets } patch set(s)).`
+			);
+		}
+	}
+
+	lines.push( '' );
 
 	if ( warnings.length ) {
 		lines.push( '**Warnings**' );
