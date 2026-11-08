@@ -56,7 +56,7 @@ Round 1 (00:20–03:20) did not meet the goal. The owner extended the event by 4
 - **Check-in and retro:** reuse `Check-in` (#29). Seat 1 opens `Retro — round 2`; every seat posts a round-2 retro there.
 - Write budget: `writes_per_event` is now 300 and counts round 1 writes too.
 
-## Owner update: round 3, patch compare (13:10–16:10, Sunday 2026-11-08)
+## Owner update: round 3, patch compare (14:00–17:00, Sunday 2026-11-08)
 Rounds 1–2 met every line above (final runs: #58 and `docs/final-runs.md`; retro: Discussion #59). Round 3 adds one new goal to the same suite. The owner reviews ULS patches by checking them out on the agent wiki and comparing by hand. The suite already answers "what passes"; now it should also answer "what changed between two versions of the code".
 
 **What you can and can't switch.** The ULS code on the wiki is the owner's checkout. Agents never change it (rules below). For a real before/after inside this event, use the wiki's QA cookies: same code, old and new language selector. `qa_t439715=old` turns the new selector off for Timeless, `qa_t439718=old` for MonoBook and Vector legacy, `qa_t439851=old` for Modern and Cologne Blue (owner checked: with `qa_t439715=old` Timeless gets `wgULSLanguageSelectorV2Enabled: false`). Vector 2022 and Minerva don't change. For a real Gerrit patch, the owner switches the checkout after the event and runs the same commands.
@@ -81,7 +81,7 @@ Rounds 1–2 met every line above (final runs: #58 and `docs/final-runs.md`; ret
 - Full runs go through `SKILLS/background-run/` with the lock name `matrix` in the run folder (`/Users/hueitan/projects/ai-hackathon/runs/ai-hackathon-only__uls-ui-tests`). One full run at a time.
 - **Gemini seats (2 and 4) are `browser: no`.** They write code that works on saved results files (compare, HTML page, Phabricator draft, README) and test it on small fixture files committed under `tests/fixtures/`. When a real run is needed they post a `RUN REQUEST` with the exact command, and a browser seat runs it and posts the output.
 - Seat 5 (challenger) has reviewer rights and can't push. It runs the proof pairs; seat 1 commits `docs/DONE.md` from its output.
-- **Freeze at 15:25.** After it no new feature PRs, only the proof runs and fixes for what they show.
+- **Freeze at 16:15.** After it no new feature PRs, only the proof runs and fixes for what they show.
 - Agents never edit `GOALS.md`. The evidence for each line goes in `docs/DONE.md`.
 - "Same result" means every row has the same outcome kind (pass, FAIL, xfail, n/a, skip) in both runs.
 - When a seat is down (usage limit), its `backup` in the yaml below signs off for it and writes its retro note.
@@ -117,9 +117,9 @@ Rounds 1–2 met every line above (final runs: #58 and `docs/final-runs.md`; ret
 ai-hackathon:
   repo: ai-hackathon-only/uls-ui-tests
   owner: hueitan            # the human who is responsible
-  start: 2026-11-08T13:10+01:00
-  end:   2026-11-08T16:10+01:00
-  freeze: 2026-11-08T15:25+01:00 # no new feature PRs after this
+  start: 2026-11-08T14:00+01:00
+  end:   2026-11-08T17:00+01:00
+  freeze: 2026-11-08T16:15+01:00 # no new feature PRs after this
   round_minutes: 5                # how often each agent wakes up
   when_done_early: stretch          # stop | stretch | polish-until-end
   seats:                          # identities = GitHub Apps; roles are chosen by the agents
