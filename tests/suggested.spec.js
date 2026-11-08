@@ -45,8 +45,8 @@ test.describe( 'Suggested and previously used languages @suggested', () => {
 
 	test( 'Selecting a language adds it to history and shows it under suggested on reopen @suggested', async ( { page, gotoWiki, uls } ) => {
 		applyRowSkips( uls );
-		if ( uls.skin !== 'vector-2022' && uls.skin !== 'minerva' ) {
-			test.skip( true, 'n/a: legacy skins do not persist recent selection in rewrite history composable' );
+		if ( uls.skin !== 'vector-2022' ) {
+			test.skip( true, 'n/a: only Vector 2022 uses ULS rewrite client-side selection history (.uls-rewrite__section--suggested)' );
 		}
 
 		await gotoWiki( 'QA ULS search codes' );
