@@ -20,6 +20,9 @@ module.exports = defineConfig( {
 	expect: { timeout: 10000 },
 	reporter: [ [ 'list' ], [ 'html', { open: 'never', outputFolder: 'playwright-report' } ], [ './tests/support/summary-reporter.js' ] ],
 	use: {
+		// A click that never becomes actionable fails as an error after 10 s instead of
+		// running into the test timeout; test.fail() (known issues) treats a timeout as unexpected.
+		actionTimeout: 10000,
 		channel: 'chrome',
 		headless: true,
 		launchOptions: {
