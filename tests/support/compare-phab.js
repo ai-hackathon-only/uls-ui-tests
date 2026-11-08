@@ -163,13 +163,16 @@ function writePhab( input, outDir, thirdArg ) {
 
 renderPhab.renderPhab = renderPhab;
 renderPhab.renderPhabDraft = renderPhab;
+renderPhab.renderComparePhab = renderPhab;
 renderPhab.generatePhab = renderPhab;
 renderPhab.generatePhabDraft = renderPhab;
+renderPhab.generateComparePhab = renderPhab;
 renderPhab.buildPhab = renderPhab;
 renderPhab.buildPhabDraft = renderPhab;
 renderPhab.render = renderPhab;
 renderPhab.writePhab = writePhab;
 renderPhab.writePhabDraft = writePhab;
+renderPhab.writeComparePhab = writePhab;
 renderPhab.computeFromRuns = computeFromRuns;
 renderPhab.default = renderPhab;
 

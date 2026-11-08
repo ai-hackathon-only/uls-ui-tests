@@ -291,13 +291,20 @@ function normalizeDiff( input, opts = {}, thirdArg ) {
 	const newFailures = pick( [ 'newFailures', 'passToFail', 'regressions' ], computed && computed.newFailures );
 	const fixed = pick( [ 'fixed', 'fixedRows', 'failToPass', 'fixes' ], computed && computed.fixed );
 	const kiNowPassing = pick( [ 'kiNowPassing', 'knownIssuesNowPassing', 'knownIssuesPassing', 'xfailToPass' ], computed && computed.kiNowPassing );
-	const stillFailing = pick( [ 'stillFailing', 'stillFailingRows', 'unchangedFailures' ], computed && computed.stillFailing );
+	const stillFailingRaw = pick( [ 'stillFailing', 'stillFailingRows', 'unchangedFailures' ], computed && computed.stillFailing );
+	const stillXfailRaw = pick( [ 'stillXfail', 'unchangedXfail' ], null );
+	const stillFailing = [ ...stillFailingRaw, ...stillXfailRaw ];
 	const added = pick( [ 'added', 'testsAdded' ], computed && computed.added );
 	const removed = pick( [ 'removed', 'testsRemoved' ], computed && computed.removed );
 	const notCompared = pick( [ 'notCompared', 'uncompared' ], computed && computed.notCompared );
 	const naChanges = pick( [ 'naChanges', 'naChanged', 'otherChanges' ], computed && computed.naChanges );
-	let recovered = pick( [ 'recovered', 'recoveredRows', 'recoveredTests' ], null );
-	if ( !recovered.length ) {
+	let recovered = [];
+	if ( Array.isArray( cat.recoveredBefore ) || Array.isArray( cat.recoveredAfter ) || Array.isArray( d.recoveredBefore ) || Array.isArray( d.recoveredAfter ) ) {
+		recovered = [
+			...( cat.recoveredBefore || d.recoveredBefore || [] ).map( ( x ) => normalizeItem( { ...x, side: 'before' } ) ),
+			...( cat.recoveredAfter || d.recoveredAfter || [] ).map( ( x ) => normalizeItem( { ...x, side: 'after' } ) )
+		];
+	} else {
 		const recObj = ( cat.recovered && !Array.isArray( cat.recovered ) && typeof cat.recovered === 'object' ) ? cat.recovered :
 			( d.recovered && !Array.isArray( d.recovered ) && typeof d.recovered === 'object' ) ? d.recovered : null;
 		if ( recObj && ( Array.isArray( recObj.before ) || Array.isArray( recObj.after ) ) ) {
@@ -305,13 +312,20 @@ function normalizeDiff( input, opts = {}, thirdArg ) {
 				...( recObj.before || [] ).map( ( x ) => normalizeItem( { ...x, side: 'before' } ) ),
 				...( recObj.after || [] ).map( ( x ) => normalizeItem( { ...x, side: 'after' } ) )
 			];
-		} else if ( Array.isArray( cat.recoveredBefore ) || Array.isArray( cat.recoveredAfter ) || Array.isArray( d.recoveredBefore ) || Array.isArray( d.recoveredAfter ) ) {
-			recovered = [
-				...( cat.recoveredBefore || d.recoveredBefore || [] ).map( ( x ) => normalizeItem( { ...x, side: 'before' } ) ),
-				...( cat.recoveredAfter || d.recoveredAfter || [] ).map( ( x ) => normalizeItem( { ...x, side: 'after' } ) )
-			];
-		} else if ( computed && computed.recovered ) {
-			recovered = computed.recovered.map( normalizeItem );
+		} else {
+			const rawRec = pick( [ 'recovered', 'recoveredRows', 'recoveredTests' ], computed && computed.recovered );
+			for ( const r of rawRec ) {
+				if ( r.beforeRecovered || r.afterRecovered ) {
+					if ( r.beforeRecovered ) {
+						recovered.push( { ...r, side: 'before' } );
+					}
+					if ( r.afterRecovered ) {
+						recovered.push( { ...r, side: 'after' } );
+					}
+				} else {
+					recovered.push( r );
+				}
+			}
 		}
 	}
 
