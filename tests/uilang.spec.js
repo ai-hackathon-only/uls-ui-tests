@@ -9,6 +9,7 @@
 // to the wiki defaults after every test by the resetPrefsAfter fixture.
 'use strict';
 const { test, expect } = require( './support/fixtures' );
+const { markKnownIssues } = require( './support/known-issues' );
 
 const PAGE = 'QA ULS search codes';
 
@@ -72,6 +73,7 @@ test.describe( 'Interface language @uilang', () => {
 test.describe( 'Special:Preferences language field @prefs', () => {
 	test( 'language field shows the current language and saving it changes the interface @prefs', async ( { page, gotoWiki, uls } ) => {
 		test.skip( uls.user !== 'user', 'n/a: Special:Preferences needs a logged-in user' );
+		markKnownIssues( test, uls, 'prefs' );
 
 		await gotoWiki( 'Special:Preferences' );
 		// Mobile view (Minerva): core lists the sections (.mw-mobile-prefs-sections)
@@ -81,15 +83,18 @@ test.describe( 'Special:Preferences language field @prefs', () => {
 		}
 		// Core replaces the <select> with a Codex lookup (mw.widgets.LanguageSelectWidget).
 		const field = page.locator( '.oo-ui-fieldLayout:has( > .oo-ui-fieldLayout-body #mw-input-wplanguage )' );
-		const input = field.locator( 'input[role="combobox"]' );
+		const input = field.locator( 'input[role="combobox"]:visible' ).first();
 		await expect( input ).toBeVisible();
 		await expect( input ).toHaveValue( /English/ );
 
 		await input.fill( 'Deutsch' );
 		// On small screens the menu can sit below the fold: scroll it in first.
 		const option = page.locator( '.cdx-menu-item:visible' ).filter( { hasText: 'Deutsch' } ).first();
-		await option.scrollIntoViewIfNeeded();
-		await option.click();
+		await expect( option, 'a "Deutsch" menu item after typing' ).toBeVisible( { timeout: 10000 } );
+		// Short action timeouts: on Minerva (KI-3) the item can be "visible" but never
+		// scroll into view, and the test must fail on that step, not hit the test timeout.
+		await option.scrollIntoViewIfNeeded( { timeout: 5000 } );
+		await option.click( { timeout: 5000 } );
 		await expect( page.locator( '#mw-input-wplanguage' ) ).toHaveValue( 'de' );
 
 		await Promise.all( [
