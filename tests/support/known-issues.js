@@ -20,6 +20,14 @@ const ISSUES = [
 		users: null, // all
 		// Feature groups whose tests start from the language button.
 		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen' ]
+	},
+	{
+		id: 'KI-4',
+		title: 'Timeless hides language selector trigger in collapsed navigation on viewports narrower than 851px',
+		skins: [ 'timeless' ],
+		devices: [ 'tablet', 'mobile' ],
+		users: null, // all
+		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen' ]
 	}
 ];
 
