@@ -30,6 +30,7 @@ async function savedLanguage( page ) {
 
 test.describe( 'Interface language @uilang', () => {
 	test( 'setlang dialog Accept switches the interface language and it stays after a reload @uilang', async ( { page, gotoWiki, uls } ) => {
+		test.skip( uls.skin === 'minerva', 'n/a: Minerva is a CoreFeaturesOnly skin, so ULS Hooks::onBeforePageDisplay returns before handleSetLang and never loads ext.uls.setlang' );
 		await gotoWiki( PAGE );
 		expect( ( await uiLanguage( page ) ).config ).toBe( 'en' );
 
@@ -55,7 +56,8 @@ test.describe( 'Interface language @uilang', () => {
 		}
 	} );
 
-	test( 'setlang dialog Cancel keeps the interface language @uilang', async ( { page, gotoWiki } ) => {
+	test( 'setlang dialog Cancel keeps the interface language @uilang', async ( { page, gotoWiki, uls } ) => {
+		test.skip( uls.skin === 'minerva', 'n/a: Minerva is a CoreFeaturesOnly skin, so ULS Hooks::onBeforePageDisplay returns before handleSetLang and never loads ext.uls.setlang' );
 		await gotoWiki( PAGE, { setlang: 'de' } );
 		const dialog = page.locator( '.uls-setlang-dialog' );
 		await expect( dialog ).toBeVisible();
@@ -72,6 +74,11 @@ test.describe( 'Special:Preferences language field @prefs', () => {
 		test.skip( uls.user !== 'user', 'n/a: Special:Preferences needs a logged-in user' );
 
 		await gotoWiki( 'Special:Preferences' );
+		// Mobile view (Minerva): core lists the sections (.mw-mobile-prefs-sections)
+		// and opens each in a window; the field is in "User profile".
+		if ( uls.skin === 'minerva' ) {
+			await page.locator( '.mw-mobile-prefs-sections' ).getByText( 'User profile' ).first().click();
+		}
 		// Core replaces the <select> with a Codex lookup (mw.widgets.LanguageSelectWidget).
 		const field = page.locator( '.oo-ui-fieldLayout:has( > .oo-ui-fieldLayout-body #mw-input-wplanguage )' );
 		const input = field.locator( 'input[role="combobox"]' );
@@ -79,7 +86,9 @@ test.describe( 'Special:Preferences language field @prefs', () => {
 		await expect( input ).toHaveValue( /English/ );
 
 		await input.fill( 'Deutsch' );
+		// On small screens the menu can sit below the fold: scroll it in first.
 		const option = page.locator( '.cdx-menu-item:visible' ).filter( { hasText: 'Deutsch' } ).first();
+		await option.scrollIntoViewIfNeeded();
 		await option.click();
 		await expect( page.locator( '#mw-input-wplanguage' ) ).toHaveValue( 'de' );
 
