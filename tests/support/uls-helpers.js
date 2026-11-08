@@ -12,7 +12,7 @@ function getLanguageTrigger( page, skin ) {
 	switch ( skin ) {
 		case 'vector-2022':
 			// The interactive, focusable trigger checkbox/button in Vector 2022
-			return page.locator( '#p-lang-btn-checkbox, #p-lang-btn' ).first();
+			return page.locator( '#p-lang-btn-checkbox' );
 		case 'minerva':
 			// The interactive language icon/anchor in Minerva header or page actions
 			return page.locator( 'a.minerva-icon--language-switcher, #page-actions-languages a, a.language-selector, #language-selector a' ).first();

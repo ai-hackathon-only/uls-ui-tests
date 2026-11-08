@@ -8,7 +8,7 @@
 'use strict';
 const { test, expect } = require( './support/fixtures' );
 const { markKnownIssues } = require( './support/known-issues' );
-const { getLanguageTrigger, getSelectorDialog } = require( './support/uls-helpers' );
+const { getLanguageTrigger, getSelectorDialog, waitForStableBox } = require( './support/uls-helpers' );
 
 /**
  * Applies known issue fail annotations and matrix skips per skin/device row.
@@ -22,25 +22,26 @@ function applyRowSkips( uls ) {
 }
 
 /**
- * Focuses language trigger and activates it via keyboard (Enter/Space), falling back to click.
+ * Focuses language trigger and activates it via keyboard (Enter/Space).
  * @param {import('@playwright/test').Page} page
  * @param {string} skin
  */
 async function openSelectorByKeyboard( page, skin ) {
 	const trigger = getLanguageTrigger( page, skin );
 	await expect( trigger, `Language trigger visible for skin ${ skin }` ).toBeVisible();
+	await trigger.scrollIntoViewIfNeeded();
 	await trigger.focus();
 	await expect( trigger ).toBeFocused();
-	await page.keyboard.press( 'Enter' );
+
+	if ( skin === 'vector-2022' ) {
+		await page.keyboard.press( 'Space' );
+	} else {
+		await page.keyboard.press( 'Enter' );
+	}
 
 	const dialog = getSelectorDialog( page );
-	if ( !( await dialog.isVisible().catch( () => false ) ) ) {
-		await page.keyboard.press( 'Space' );
-	}
-	if ( !( await dialog.isVisible().catch( () => false ) ) ) {
-		await trigger.click( { timeout: 5000 } );
-	}
 	await expect( dialog, 'Selector dialog visible via keyboard activation' ).toBeVisible();
+	await waitForStableBox( dialog );
 	return dialog;
 }
 
@@ -65,18 +66,29 @@ test.describe( 'Keyboard accessibility (@keyboard)', () => {
 		await page.waitForTimeout( 200 );
 
 		// Result item with active or highlighted selection (excluding input)
-		const activeItem = dialog.locator( 'li.active, li[aria-selected="true"], li.highlighted, [role="option"][aria-selected="true"]' ).first();
-		await expect( activeItem, 'A result item is selected or highlighted via ArrowDown' ).toBeVisible();
-		const firstSelected = ( await activeItem.getAttribute( 'data-code' ) ) ||
-			( await activeItem.getAttribute( 'data-language-code' ) ) ||
-			( await activeItem.textContent() );
+		const activeDescendant1 = await searchInput.getAttribute( 'aria-activedescendant' );
+		const activeItem1 = activeDescendant1 ?
+			page.locator( '#' + activeDescendant1 ) :
+			dialog.locator( '.uls-rewrite__language-item--highlighted, li.active, li[aria-selected="true"], li.highlighted, [role="option"][aria-selected="true"]' ).first();
+
+		await expect( activeItem1, 'A result item is selected or highlighted via ArrowDown' ).toBeVisible();
+		const firstSelected = ( await activeItem1.getAttribute( 'data-language-code' ) ) ||
+			( await activeItem1.getAttribute( 'data-code' ) ) ||
+			( await activeItem1.textContent() );
 
 		// Press ArrowDown again to move to next item
 		await page.keyboard.press( 'ArrowDown' );
 		await page.waitForTimeout( 200 );
-		const secondSelected = ( await activeItem.getAttribute( 'data-code' ) ) ||
-			( await activeItem.getAttribute( 'data-language-code' ) ) ||
-			( await activeItem.textContent() );
+
+		const activeDescendant2 = await searchInput.getAttribute( 'aria-activedescendant' );
+		const activeItem2 = activeDescendant2 ?
+			page.locator( '#' + activeDescendant2 ) :
+			dialog.locator( '.uls-rewrite__language-item--highlighted, li.active, li[aria-selected="true"], li.highlighted, [role="option"][aria-selected="true"]' ).first();
+
+		await expect( activeItem2, 'Subsequent result item is selected or highlighted via ArrowDown' ).toBeVisible();
+		const secondSelected = ( await activeItem2.getAttribute( 'data-language-code' ) ) ||
+			( await activeItem2.getAttribute( 'data-code' ) ) ||
+			( await activeItem2.textContent() );
 
 		expect( secondSelected, 'ArrowDown advances to subsequent language item' ).not.toBe( firstSelected );
 	} );
@@ -128,18 +140,17 @@ test.describe( 'Keyboard accessibility (@keyboard)', () => {
 		const searchInput = dialog.locator( 'input[type="search"], input[role="combobox"], .uls-languagefilter, .uls-filterinput' ).first();
 		await expect( searchInput ).toBeVisible();
 
-		// Record blurred style
-		await page.locator( '#firstHeading' ).click( { force: true } );
-		const blurredStyle = await searchInput.evaluate( ( el ) => {
+		// Record focused style
+		const focusedStyle = await searchInput.evaluate( ( el ) => {
 			const s = window.getComputedStyle( el );
 			return { outline: s.outline, outlineWidth: s.outlineWidth, boxShadow: s.boxShadow, borderColor: s.borderColor };
 		} );
 
-		// Focus search input
-		await searchInput.focus();
-		await expect( searchInput ).toBeFocused();
+		// Tab away to blur searchInput without closing the dialog
+		await page.keyboard.press( 'Tab' );
+		await page.waitForTimeout( 200 );
 
-		const focusedStyle = await searchInput.evaluate( ( el ) => {
+		const blurredStyle = await searchInput.evaluate( ( el ) => {
 			const s = window.getComputedStyle( el );
 			return { outline: s.outline, outlineWidth: s.outlineWidth, boxShadow: s.boxShadow, borderColor: s.borderColor };
 		} );
@@ -151,6 +162,11 @@ test.describe( 'Keyboard accessibility (@keyboard)', () => {
 			focusedStyle.borderColor !== blurredStyle.borderColor
 		);
 		expect( hasFocusIndicator, 'Search input displays visible focus indicator when focused' ).toBe( true );
+
+		// Shift+Tab back to restore focus to search input
+		await page.keyboard.press( 'Shift+Tab' );
+		await page.waitForTimeout( 200 );
+		await expect( searchInput ).toBeFocused();
 	} );
 
 } );
