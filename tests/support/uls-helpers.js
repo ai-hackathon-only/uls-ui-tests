@@ -109,7 +109,8 @@ function getLanguageOption( dialog, code ) {
 		`[data-language-code="${ code }"], ` +
 		`[data-code="${ code }"], ` +
 		`a.uls-languagefilter-link[data-code="${ code }"], ` +
-		`a[lang="${ code }"]`
+		`a[lang="${ code }"], ` +
+		`li.interwiki-${ code }`
 	).first();
 }
 
