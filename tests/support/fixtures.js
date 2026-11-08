@@ -16,6 +16,7 @@ const path = require( 'path' );
 const base = require( '@playwright/test' );
 const { checkBaseUrl } = require( './base-url' );
 const { isKnownError } = require( './known-errors' );
+const { qaCookies } = require( './cookies' );
 
 const WIKI = checkBaseUrl( process.env.ULS_WIKI );
 const AUTH_DIR = path.join( __dirname, '..', '..', '.auth' );
@@ -75,6 +76,7 @@ const SESSION_FAILURE = /problem with your login session|session hijacking/i;
 
 async function loginOnce( browser, username, file ) {
 	const ctx = await browser.newContext();
+	await ctx.addCookies( qaCookies( WIKI ) );
 	try {
 		const page = await ctx.newPage();
 		await page.goto( `${ WIKI }/w/index.php?title=Special:UserLogin&useskin=vector-2022&useformat=desktop` );
@@ -139,6 +141,12 @@ const test = base.test.extend( {
 
 	storageState: async ( { authState }, use ) => {
 		await use( authState );
+	},
+
+	// ULS_COOKIES (QA cookies) on the wiki host, anonymous and logged in.
+	context: async ( { context }, use ) => {
+		await context.addCookies( qaCookies( WIKI ) );
+		await use( context );
 	},
 
 	// The logged-in account name (null for anon rows).
