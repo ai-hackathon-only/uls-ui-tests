@@ -1,0 +1,139 @@
+{
+ "format": 1,
+ "run": {
+  "name": "after-fail",
+  "wiki": "http://en.mediawiki-agents.mwdd.localhost:8081",
+  "ulsCommit": "d8fa0f4",
+  "ulsCommitDate": "2026-11-07",
+  "coreCommit": "91a2c3e",
+  "coreVersion": "1.44.0-alpha",
+  "suiteCommit": "b6d6592",
+  "suiteDirty": false,
+  "skins": [
+   "vector-2022",
+   "vector",
+   "monobook",
+   "timeless",
+   "modern",
+   "cologneblue",
+   "minerva"
+  ],
+  "cookies": null,
+  "filters": {
+   "skin": null,
+   "device": null,
+   "user": null,
+   "args": []
+  },
+  "shots": true,
+  "start": "2026-11-08T13:25:00.000Z",
+  "seconds": 360,
+  "status": "failed"
+ },
+ "tests": [
+  {
+   "id": "vector-2022-desktop-anon › open.spec.js › Language button is visible and opens selector @open",
+   "row": "vector-2022-desktop-anon",
+   "skin": "vector-2022",
+   "device": "desktop",
+   "user": "anon",
+   "group": "open",
+   "file": "open.spec.js",
+   "title": "Language button is visible and opens selector @open",
+   "outcome": "FAIL",
+   "recovered": false,
+   "reason": "Error: expect(locator).toBeVisible() failed",
+   "error": "Error: expect(locator).toBeVisible() failed"
+  },
+  {
+   "id": "timeless-desktop-anon › settings.spec.js › quick action opens the settings dialog and the close button closes it @settings",
+   "row": "timeless-desktop-anon",
+   "skin": "timeless",
+   "device": "desktop",
+   "user": "anon",
+   "group": "settings",
+   "file": "settings.spec.js",
+   "title": "quick action opens the settings dialog and the close button closes it @settings",
+   "outcome": "pass",
+   "recovered": false,
+   "reason": null,
+   "error": null
+  },
+  {
+   "id": "timeless-desktop-anon › rtl.spec.js › Selector mirrors correctly in RTL interface @rtl",
+   "row": "timeless-desktop-anon",
+   "skin": "timeless",
+   "device": "desktop",
+   "user": "anon",
+   "group": "rtl",
+   "file": "rtl.spec.js",
+   "title": "Selector mirrors correctly in RTL interface @rtl",
+   "outcome": "xfail",
+   "recovered": false,
+   "reason": "KI-6: Timeless skin stylesheet overrides ULS search input direction to LTR in RTL mode",
+   "error": "Error: Search input computed direction is rtl"
+  },
+  {
+   "id": "cologneblue-desktop-anon › open.spec.js › Language button is visible and opens selector @open",
+   "row": "cologneblue-desktop-anon",
+   "skin": "cologneblue",
+   "device": "desktop",
+   "user": "anon",
+   "group": "open",
+   "file": "open.spec.js",
+   "title": "Language button is visible and opens selector @open",
+   "outcome": "xfail",
+   "recovered": false,
+   "reason": "KI-1: Cologne Blue has no ULS language button",
+   "error": "Error: Language trigger visible for skin cologneblue"
+  },
+  {
+   "id": "minerva-mobile-user › uilang.spec.js › Special:Preferences language field updates interface language @uilang",
+   "row": "minerva-mobile-user",
+   "skin": "minerva",
+   "device": "mobile",
+   "user": "user",
+   "group": "uilang",
+   "file": "uilang.spec.js",
+   "title": "Special:Preferences language field updates interface language @uilang",
+   "outcome": "pass",
+   "recovered": false,
+   "reason": null,
+   "error": null
+  }
+ ],
+ "coverage": {
+  "groups": [
+   "open",
+   "rtl",
+   "settings",
+   "uilang"
+  ],
+  "rows": {
+   "vector-2022-desktop-anon": {
+    "open": "FAIL 1/1",
+    "rtl": "",
+    "settings": "",
+    "uilang": ""
+   },
+   "timeless-desktop-anon": {
+    "open": "",
+    "rtl": "xfail 1/1",
+    "settings": "pass 1/1",
+    "uilang": ""
+   },
+   "cologneblue-desktop-anon": {
+    "open": "xfail 1/1",
+    "rtl": "",
+    "settings": "",
+    "uilang": ""
+   },
+   "minerva-mobile-user": {
+    "open": "",
+    "rtl": "",
+    "settings": "",
+    "uilang": "pass 1/1"
+   }
+  }
+ }
+}
