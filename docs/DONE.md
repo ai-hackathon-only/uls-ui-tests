@@ -2,6 +2,18 @@
 
 Filled in by seat 1 from the proof runs. Wiki: http://en.mediawiki-agents.mwdd.localhost:8081. Machine: MacBook Pro, Apple M2 Max, 64 GB.
 
+## Lines and where they are met
+
+| GOALS.md line (round 3) | Where | Evidence |
+|---|---|---|
+| Saved runs | #62 | `runs/shots-full/results.json`: `run` (ULS, core, suite commit + dirty flag, skins, wiki, cookies, filters, start, seconds), 1000 `tests` (row, skin, device, user, group, title, outcome, recovered, error), `coverage` |
+| QA cookies | #62 | `ULS_COOKIES=...` recorded as `run.cookies`; see proof 2 |
+| Compare | #67, #66 | proofs 1 and 3 below: `compare/<a>-vs-<b>/` with `index.html`, `summary.md`, `phab-draft.txt`; exit 1 on a new failure |
+| Screenshots side by side | #64, #66 | `ULS_SHOTS=1` run `shots-full` saved 40 PNGs, one per row; 722 s, still under 15 min |
+| Phabricator draft | #66 | `phab-draft.txt` in each compare folder; see proof 2 |
+| Proof in this file | #69 | proofs 1, 2, 3 below |
+| README "Compare two versions" | #66 | `README.md` section with the owner's four steps |
+
 ## Proof 3: compare can fail
 
 Copy of a real full run (`runs/shots-full`, 1000 tests, ULS_SHOTS=1, 722 s) with one row edited from pass to FAIL:
