@@ -31,3 +31,9 @@ Not a ULS bug. The test wiki has no `/favicon.ico` (404), and Chrome logs
   MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
 - In the suite: `tests/support/known-issues.js` marks the trigger-based groups (open, search,
   interlanguage, suggested, settings, keyboard, rtl, small-screen) on Cologne Blue rows as expected failures.
+
+## KI-2
+Not a ULS bug. MediaWiki's EventLogging / WikimediaEvents sends telemetry to
+`http://localhost:8192/v1/events` (EventGate), which is not running on the local
+development wiki, resulting in `net::ERR_CONNECTION_REFUSED [http://localhost:8192/v1/events]`.
+Allow-listed in `tests/support/known-errors.js`.
