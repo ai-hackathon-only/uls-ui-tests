@@ -36,6 +36,14 @@ const ISSUES = [
 		devices: [ 'mobile' ],
 		users: null, // all
 		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen', 'viewport' ]
+	},
+	{
+		id: 'KI-6',
+		title: 'Timeless skin stylesheet overrides ULS search input direction to LTR in RTL mode',
+		skins: [ 'timeless' ],
+		devices: [ 'desktop' ],
+		users: null, // all
+		groups: [ 'rtl' ]
 	}
 ];
 
