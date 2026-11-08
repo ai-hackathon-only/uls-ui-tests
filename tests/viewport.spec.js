@@ -17,9 +17,6 @@ test.describe( 'Small screens & viewport responsiveness (@viewport)', () => {
 
 	test.beforeEach( ( { uls } ) => {
 		markKnownIssues( test, uls, 'small-screen' );
-		if ( uls.skin === 'timeless' && ( uls.device === 'tablet' || uls.device === 'mobile' ) ) {
-			test.fail( true, 'KI-4: Timeless hides language portlet (#other-languages) on viewports narrower than 851px' );
-		}
 	} );
 
 	test( 'Selector fits mobile and tablet viewport without horizontal scroll @viewport', async ( { page, gotoWiki, uls } ) => {

@@ -7,8 +7,6 @@ const KNOWN = [
 	{ issue: 'KI-0', kind: 'console', match: /status of 404 .*\[[^\]]*\/favicon\.ico\]$/ },
 	// Not ULS: EventGate is not running locally; EventLogging beacons fail (KNOWN-ISSUES.md#ki-2).
 	{ issue: 'KI-2', kind: 'console', match: /localhost:8192\/v1\/events/ },
-	// Not ULS: MobileFrontend related-articles queries public Wikipedia API (KNOWN-ISSUES.md#ki-3).
-	{ issue: 'KI-3', kind: 'console', match: /en\.wikipedia\.org\/w\/api\.php/ },
 ];
 
 function isKnownError( e ) {

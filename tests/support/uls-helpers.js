@@ -44,7 +44,20 @@ function getSelectorDialog( page ) {
  * @param {import('@playwright/test').Page} page
  */
 function getCloseButton( page ) {
-	return page.locator( '.uls-rewrite button[aria-label*="close" i], .uls-rewrite button.close, .uls-icon-close, #languagesettings .ui-dialog-titlebar-close, .language-overlay .cancel, .overlay .cancel' ).first();
+	return page.locator( [
+		'.language-overlay .cancel',
+		'.language-overlay header button',
+		'.overlay.overlay-languages header button',
+		'.overlay .cancel',
+		'button.cancel',
+		'button.header-cancel',
+		'.uls-icon-close',
+		'button.uls-settings-cancel',
+		'.ui-dialog-titlebar-close',
+		'.uls-rewrite button.close',
+		'.uls-rewrite__header__mobile button',
+		'.uls-rewrite button[aria-label*="close" i]'
+	].join( ', ' ) ).first();
 }
 
 /**
