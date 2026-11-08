@@ -1,0 +1,59 @@
+{
+ "format": 1,
+ "run": {
+  "name": "after-subset",
+  "wiki": "http://en.mediawiki-agents.mwdd.localhost:8081",
+  "ulsCommit": "d8fa0f4",
+  "ulsCommitDate": "2026-11-07",
+  "coreCommit": "91a2c3e",
+  "coreVersion": "1.44.0-alpha",
+  "suiteCommit": "b6d6592",
+  "suiteDirty": false,
+  "skins": [
+   "vector-2022",
+   "vector",
+   "monobook",
+   "timeless",
+   "modern",
+   "cologneblue",
+   "minerva"
+  ],
+  "cookies": null,
+  "filters": {
+   "skin": "vector-2022",
+   "device": null,
+   "user": null,
+   "args": []
+  },
+  "shots": false,
+  "start": "2026-11-08T13:35:00.000Z",
+  "seconds": 28,
+  "status": "passed"
+ },
+ "tests": [
+  {
+   "id": "vector-2022-desktop-anon › open.spec.js › Language button is visible and opens selector @open",
+   "row": "vector-2022-desktop-anon",
+   "skin": "vector-2022",
+   "device": "desktop",
+   "user": "anon",
+   "group": "open",
+   "file": "open.spec.js",
+   "title": "Language button is visible and opens selector @open",
+   "outcome": "pass",
+   "recovered": false,
+   "reason": null,
+   "error": null
+  }
+ ],
+ "coverage": {
+  "groups": [
+   "open"
+  ],
+  "rows": {
+   "vector-2022-desktop-anon": {
+    "open": "pass 1/1"
+   }
+  }
+ }
+}
