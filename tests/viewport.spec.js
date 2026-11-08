@@ -13,7 +13,7 @@ const {
 	getLanguageOption
 } = require( './support/uls-helpers' );
 
-test.describe( 'Small screens & viewport responsiveness (@viewport)', () => {
+test.describe( 'Small screens & viewport responsiveness @viewport', () => {
 
 	test.beforeEach( ( { uls } ) => {
 		markKnownIssues( test, uls, 'small-screen' );
@@ -21,7 +21,7 @@ test.describe( 'Small screens & viewport responsiveness (@viewport)', () => {
 
 	test( 'Selector fits mobile and tablet viewport without horizontal scroll @viewport', async ( { page, gotoWiki, uls } ) => {
 		if ( uls.device !== 'mobile' && uls.device !== 'tablet' ) {
-			test.skip( true, 'Applies to mobile and tablet viewports' );
+			test.skip( true, 'n/a: Applies to mobile and tablet viewports' );
 		}
 
 		await gotoWiki( 'QA ULS search codes' );
@@ -44,7 +44,7 @@ test.describe( 'Small screens & viewport responsiveness (@viewport)', () => {
 
 	test( 'Touch tap interactions open selector and allow selecting language @viewport', async ( { page, gotoWiki, uls } ) => {
 		if ( uls.device !== 'mobile' && uls.device !== 'tablet' ) {
-			test.skip( true, 'Touch interactions apply to mobile and tablet devices' );
+			test.skip( true, 'n/a: Touch interactions apply to mobile and tablet devices' );
 		}
 
 		// Prevent leaving test wiki on link selection

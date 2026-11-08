@@ -19,7 +19,7 @@ const ROOT = path.join( __dirname, '..', '..' );
 function groupOf( test ) {
 	const tag = ( test.tags || [] ).find( ( t ) => t.startsWith( '@' ) );
 	if ( tag ) {
-		return tag.slice( 1 );
+		return tag.slice( 1 ).replace( /[^\w-]+$/, '' );
 	}
 	const m = test.title.match( /@([\w-]+)/ );
 	return m ? m[ 1 ] : 'other';
