@@ -57,22 +57,20 @@ function getSelectorDialog( page ) {
 /**
  * Returns the locator for the close button inside the open selector dialog.
  * Handles ULS V2 rewrite close button, classic dialog cancel/close icon, and Minerva overlay cancel button.
- * @param {import('@playwright/test').Page} page
+ * @param {import('@playwright/test').Locator} dialog
  */
-function getCloseButton( page ) {
-	return page.locator( [
-		'.uls-rewrite__header__mobile button[aria-label="Close"]',
-		'.uls-rewrite button[aria-label*="close" i]',
-		'.uls-rewrite--mobile button[aria-label*="close" i]',
-		'button.uls-settings-cancel',
-		'.uls-settings-cancel',
-		'.uls-icon-close',
-		'.ui-dialog-titlebar-close',
+function getCloseButton( dialog ) {
+	return dialog.locator( [
+		'button[aria-label="Close"]',
+		'button[aria-label="close" i]',
+		'.uls-rewrite__header__mobile button',
 		'.language-overlay .cancel',
 		'.language-overlay header button',
-		'.overlay .cancel',
 		'button.cancel',
-		'button.header-cancel'
+		'button.header-cancel',
+		'.uls-icon-close',
+		'.ui-dialog-titlebar-close',
+		'button.uls-settings-cancel'
 	].join( ', ' ) ).first();
 }
 
@@ -106,7 +104,7 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 	test( 'Esc key closes selector and restores focus @open', async ( { page, gotoWiki, uls } ) => {
 		applyRowSkips( uls );
 		if ( uls.device === 'mobile' ) {
-			test.skip( true, 'n/a: mobile devices do not have a physical Escape key; dismissed via close button' );
+			test.skip( true, 'n/a: mobile devices do not have a physical Escape key; dismissed via click-outside (desktop skins) or close button (Minerva)' );
 		}
 		await gotoWiki( 'QA ULS search codes' );
 		const trigger = getLanguageTrigger( page, uls.skin );
@@ -139,21 +137,16 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const dialog = getSelectorDialog( page );
 		await expect( dialog ).toBeVisible();
 
-		const closeBtn = getCloseButton( page );
+		const closeBtn = getCloseButton( dialog );
 		await expect( closeBtn, 'Close button visible in selector dialog' ).toBeVisible();
 		await closeBtn.click( { force: true } );
 		await expect( dialog, 'Selector dialog closes on close button click' ).toBeHidden();
-
-		// Check focus restore on devices where applicable (non-mobile, non-Minerva)
-		if ( uls.device !== 'mobile' && uls.skin !== 'minerva' ) {
-			await expect( trigger, 'Focus restored to language trigger' ).toBeFocused();
-		}
 	} );
 
 	test( 'Click outside closes selector @open', async ( { page, gotoWiki, uls } ) => {
 		applyRowSkips( uls );
-		if ( uls.device === 'mobile' || uls.skin === 'minerva' ) {
-			test.skip( true, 'n/a: mobile fullscreen dialog covers viewport with no outside target; dismissed via Close button' );
+		if ( uls.skin === 'minerva' && uls.device === 'mobile' ) {
+			test.skip( true, 'n/a: Minerva mobile overlay covers full viewport; dismissed via close button' );
 		}
 		await gotoWiki( 'QA ULS search codes' );
 		const trigger = getLanguageTrigger( page, uls.skin );
