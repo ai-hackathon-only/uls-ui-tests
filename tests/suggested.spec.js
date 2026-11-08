@@ -54,7 +54,7 @@ test.describe( 'Suggested and previously used languages @suggested', () => {
 
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
-		await trigger.click( { timeout: 5000 } );
+		await trigger.click();
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog, 'Selector dialog visible' ).toBeVisible();
@@ -72,7 +72,7 @@ test.describe( 'Suggested and previously used languages @suggested', () => {
 		await expect( trigger, 'Returned to page and trigger is visible' ).toBeVisible();
 
 		// Reopen selector
-		await trigger.click( { timeout: 5000 } );
+		await trigger.click();
 		const reopenedDialog = getSelectorDialog( page );
 		await expect( reopenedDialog, 'Reopened selector dialog visible' ).toBeVisible();
 
@@ -92,7 +92,7 @@ test.describe( 'Suggested and previously used languages @suggested', () => {
 
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
-		await trigger.click( { timeout: 5000 } );
+		await trigger.click();
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog, 'Selector dialog visible' ).toBeVisible();
@@ -122,7 +122,7 @@ test.describe( 'Suggested and previously used languages @suggested', () => {
 
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
-		await trigger.click( { timeout: 5000 } );
+		await trigger.click();
 
 		const dialog = getSelectorDialog( page );
 		await expect( dialog, 'Selector dialog visible' ).toBeVisible();

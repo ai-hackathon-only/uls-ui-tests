@@ -19,7 +19,7 @@ async function openSelectorAndGetSearch( page, skin ) {
 	const trigger = getLanguageTrigger( page, skin );
 	await expect( trigger, `Language trigger visible for ${ skin }` ).toBeVisible();
 	await trigger.scrollIntoViewIfNeeded().catch( () => {} );
-	await trigger.click( { timeout: 5000 } );
+	await trigger.click();
 
 	const dialog = page.locator( [
 		'.uls-rewrite:visible',
@@ -158,7 +158,7 @@ test.describe( 'Interlanguage navigation and empty state @interlanguage', () => 
 
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger, `${ uls.skin } language trigger visible` ).toBeVisible();
-		await trigger.click( { timeout: 5000 } );
+		await trigger.click();
 
 		const dialog = page.locator( '.uls-rewrite:visible, .vector-dropdown-content:visible, .language-overlay:visible, .overlay:visible, dialog:visible' ).first();
 		await expect( dialog, 'Selector dialog or overlay visible' ).toBeVisible();
