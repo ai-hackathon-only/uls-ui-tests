@@ -84,13 +84,14 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 
 ---
 
-## 5. Interface Language Change (`@interface-language`)
+## 5. Interface Language Change & Setlang Prompt (`@uilang`)
 
-- **Description:** Switching the interface language updates UI messages. For anonymous users, persists via cookie or URL (`uselang=`); for logged-in users, updates user preferences via API/options and survives a page reload. Tests must restore the initial language preference.
+- **Description:** Switching the interface language updates UI messages. For anonymous users, persists via cookie or URL (`uselang=`); for logged-in users, updates user preferences via API/options and survives a page reload. Accessing a page with `?setlang=<langcode>` displays a confirmation dialog asking the user whether to switch the interface language. Tests must restore the initial language preference.
 - **Teardown contract:** Tests reset user preference to English (`en`) via `action=options` API after testing.
-- **Covering spec:** `tests/interface-language.spec.js`
-  - `Anon interface language change via cookie/query @interface-language`
-  - `Logged-in interface language preference persists and restores @interface-language`
+- **Covering spec:** `tests/uilang.spec.js`
+  - `Anon interface language change via cookie/query @uilang`
+  - `Logged-in interface language preference persists and restores @uilang`
+  - `setlang query parameter triggers language switch prompt @uilang`
 
 ---
 
@@ -110,13 +111,13 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 
 ---
 
-## 7. Special:Preferences Language Field (`@preferences`)
+## 7. Special:Preferences Language Field (`@prefs`)
 
 - **Description:** Logged-in user can view and change language settings directly in `Special:Preferences#mw-prefsection-personal`. Renders the user interface language setting and `PreferredLanguagesTab.vue` (`ext.uls.preferredlanguages` multi-select lookup).
 - **Row restriction:** Logged-in users only (`ULS_USER=user`). Anon rows mark this as `n/a: anon user`.
-- **Covering spec:** `tests/preferences.spec.js`
-  - `User can view and change language setting in Special:Preferences @preferences`
-  - `Preferred languages tab renders multi-select lookup @preferences`
+- **Covering spec:** `tests/uilang.spec.js` / `tests/prefs.spec.js`
+  - `User can view and change language setting in Special:Preferences @prefs`
+  - `Preferred languages tab renders multi-select lookup @prefs`
 
 ---
 
@@ -161,15 +162,7 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 
 ---
 
-## 12. Set Language Parameter (`@setlang`)
-
-- **Description:** Accessing a page with `?setlang=<langcode>` displays a confirmation dialog asking the user whether to switch the interface language.
-- **Covering spec:** `tests/setlang.spec.js`
-  - `setlang query parameter triggers language switch prompt @setlang`
-
----
-
-## 13. Console & Network Request Health (`@errors`)
+## 12. Console & Network Request Health (`@errors`)
 
 - **Description:** Automated collection of browser console errors, unhandled exceptions, and HTTP >= 400 responses across all executed tests. Unexpected errors fail the test. Known harmless errors (such as missing `/favicon.ico` KI-0) are allow-listed in `tests/support/known-errors.js`.
 - **Known issues reporting:** Any real bug uncovered by tests must remain covered by an active test, marked as an expected failure, and documented in `KNOWN-ISSUES.md`. Each entry records: issue ID, skin, device, user, reproduction steps, expected vs actual behavior, screenshot under `docs/`, and ULS + core git commit hashes from `Special:Version`.
@@ -185,12 +178,11 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 | **@search** (Search & Autonyms) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
 | **@interlanguage** (Navigation) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
 | **@suggested** (Recent langs) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
-| **@interface-language** (Persist) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
+| **@uilang** (Interface & ?setlang=) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
 | **@settings** (Cog / IME / Webfonts)| Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes (quick action) |
-| **@preferences** (Special:Prefs) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) |
+| **@prefs** (Special:Preferences) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) |
 | **@keyboard** (Full navigation) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
 | **@rtl** (Mirroring & 390px) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
 | **@viewport** (Responsive tap) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
 | **@compact-links** (Compacted) | `n/a: v2022 dropdown` | Yes | Yes | Yes | Yes | Expected fail: KI-1 | `n/a: minerva` |
-| **@setlang** (?setlang= dialog) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | **@errors** (No 4xx/5xx/console) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
