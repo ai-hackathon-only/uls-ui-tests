@@ -15,6 +15,9 @@ test.describe( 'Right-to-Left (RTL) layout (@rtl)', () => {
 
 	test.beforeEach( ( { uls } ) => {
 		markKnownIssues( test, uls, 'rtl' );
+		if ( uls.skin === 'timeless' && ( uls.device === 'tablet' || uls.device === 'mobile' ) ) {
+			test.fail( true, 'KI-4: Timeless hides language portlet (#other-languages) on viewports narrower than 851px' );
+		}
 	} );
 
 	test( 'Selector mirrors correctly in RTL interface @rtl', async ( { page, gotoWiki, uls } ) => {
@@ -36,9 +39,11 @@ test.describe( 'Right-to-Left (RTL) layout (@rtl)', () => {
 		const searchInput = dialog.locator( 'input.uls-languagefilter, .cdx-search-input input, input[type="search"]' ).first();
 		await expect( searchInput, 'Search input is visible in selector dialog' ).toBeVisible();
 
-		// In RTL, text alignment computes to 'right'
+		// In RTL, text alignment computes to 'right' or 'start', and computed direction is 'rtl'
+		const inputDir = await searchInput.evaluate( ( el ) => window.getComputedStyle( el ).direction );
+		expect( inputDir, 'Search input computed direction is rtl' ).toBe( 'rtl' );
 		const textAlign = await searchInput.evaluate( ( el ) => window.getComputedStyle( el ).textAlign );
-		expect( textAlign, 'Search input text-align is right in RTL' ).toBe( 'right' );
+		expect( [ 'start', 'right' ], 'Search input text-align is start or right in RTL' ).toContain( textAlign );
 
 		// Codex search start-icon position check: in RTL, start icon is on the right side of the input
 		const searchIcon = dialog.locator( '.cdx-search-input__start-icon, .uls-search-icon' ).first();

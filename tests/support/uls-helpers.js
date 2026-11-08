@@ -20,8 +20,8 @@ function getLanguageTrigger( page, skin ) {
 		case 'monobook':
 		case 'timeless':
 		case 'modern':
-			// Compact interlanguage link button or cog settings trigger
-			return page.locator( 'button.mw-interlanguage-selector, .uls-settings-trigger, #p-lang .mw-interlanguage-selector' ).first();
+			// Compact interlanguage link button
+			return page.locator( '#p-lang button.mw-interlanguage-selector, button.mw-interlanguage-selector' ).first();
 		case 'cologneblue':
 			// Cologne Blue does not integrate ULS trigger (Known Issue KI-1)
 			return page.locator( '#langlinks .mw-interlanguage-selector, #p-lang-btn, #p-lang-btn-nonexistent' ).first();
