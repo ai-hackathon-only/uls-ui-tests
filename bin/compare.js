@@ -97,17 +97,6 @@ function extractKiName( testRecord, fallbackReason ) {
 	return text || 'Known issue';
 }
 
-function cellKind( cellStr ) {
-	if ( !cellStr ) {
-		return null;
-	}
-	const token = String( cellStr ).trim().split( /\s+/ )[ 0 ];
-	if ( [ 'pass', 'FAIL', 'xfail', 'n/a', 'skip' ].includes( token ) ) {
-		return token;
-	}
-	return null;
-}
-
 function parseRowParts( rowName ) {
 	const m = String( rowName ).match( /^(.*)-(desktop|tablet|mobile)-(anon|user)$/ );
 	if ( !m ) {
@@ -116,48 +105,24 @@ function parseRowParts( rowName ) {
 	return { skin: m[ 1 ], device: m[ 2 ], user: m[ 3 ] };
 }
 
-function reconcileCoverageEdits( runData ) {
-	const tests = Array.isArray( runData.tests ) ? runData.tests.map( ( t ) => ( { ...t } ) ) : [];
-	const covRows = ( runData.coverage && runData.coverage.rows ) || {};
-	for ( const [ rowName, groupCells ] of Object.entries( covRows ) ) {
-		for ( const [ group, cellVal ] of Object.entries( groupCells || {} ) ) {
-			const cKind = cellKind( cellVal );
-			if ( !cKind ) {
-				continue;
-			}
-			const matching = tests.filter( ( t ) => t.row === rowName && t.group === group );
-			if ( matching.length === 0 ) {
-				const parts = parseRowParts( rowName );
-				tests.push( {
-					id: `${ rowName } › @${ group } › ${ group }`,
-					row: rowName,
-					skin: parts.skin,
-					device: parts.device,
-					user: parts.user,
-					group,
-					file: `${ group }.spec.js`,
-					title: `@${ group }`,
-					outcome: cKind,
-					recovered: false,
-					reason: null,
-					error: cKind === 'FAIL' ? `Cell edited to ${ cellVal }` : null
-				} );
-			} else if ( cKind === 'FAIL' && !matching.some( ( t ) => t.outcome === 'FAIL' ) ) {
-				matching[ 0 ].outcome = 'FAIL';
-				if ( !matching[ 0 ].error ) {
-					matching[ 0 ].error = `Coverage cell for @${ group } is ${ cellVal }`;
-				}
-			} else if ( cKind === 'pass' && matching.some( ( t ) => t.outcome === 'FAIL' ) ) {
-				for ( const t of matching ) {
-					if ( t.outcome === 'FAIL' ) {
-						t.outcome = 'pass';
-						t.error = null;
-					}
-				}
-			}
+function dedupeTestsById( tests ) {
+	const map = new Map();
+	for ( const t of Array.isArray( tests ) ? tests : [] ) {
+		if ( !t || !t.id ) {
+			continue;
+		}
+		const prev = map.get( t.id );
+		if ( !prev ) {
+			map.set( t.id, { ...t } );
+		} else {
+			// If a test ran multiple times (e.g. retry), keep the final attempt and carry recovered=true.
+			map.set( t.id, {
+				...t,
+				recovered: Boolean( prev.recovered || t.recovered || t.outcome === 'pass' )
+			} );
 		}
 	}
-	return tests;
+	return [ ...map.values() ];
 }
 
 function buildItem( base, beforeTest, afterTest, category, ki = null ) {
@@ -228,10 +193,14 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 
 	const bSuite = `${ bRun.suiteCommit || 'unknown' }${ bRun.suiteDirty ? ' (dirty)' : '' }`;
 	const aSuite = `${ aRun.suiteCommit || 'unknown' }${ aRun.suiteDirty ? ' (dirty)' : '' }`;
-	if ( bRun.suiteCommit !== aRun.suiteCommit || Boolean( bRun.suiteDirty ) !== Boolean( aRun.suiteDirty ) || bRun.suiteDirty || aRun.suiteDirty ) {
+	if ( bRun.suiteCommit !== aRun.suiteCommit || Boolean( bRun.suiteDirty ) !== Boolean( aRun.suiteDirty ) ) {
 		const msg = `Suite commits or working tree state differ (${ bSuite } vs ${ aSuite }): this includes a test change, not only a ULS code change.`;
 		warnings.push( msg );
 		warningDetails.push( { code: 'suite-changed', message: msg, beforeSuite: bSuite, afterSuite: aSuite } );
+	} else if ( bRun.suiteDirty && aRun.suiteDirty ) {
+		const msg = `Both runs had uncommitted local changes in the test suite (${ aSuite }).`;
+		warnings.push( msg );
+		warningDetails.push( { code: 'suite-dirty', message: msg, beforeSuite: bSuite, afterSuite: aSuite } );
 	}
 
 	const filtersDiffer = !sameFilters( bRun.filters, aRun.filters );
@@ -251,8 +220,8 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 		warningDetails.push( { code: 'no-code-change', message: msg } );
 	}
 
-	const bTests = reconcileCoverageEdits( beforeData );
-	const aTests = reconcileCoverageEdits( afterData );
+	const bTests = dedupeTestsById( beforeData.tests );
+	const aTests = dedupeTestsById( afterData.tests );
 
 	const bById = new Map( bTests.map( ( t ) => [ t.id, t ] ) );
 	const aById = new Map( aTests.map( ( t ) => [ t.id, t ] ) );
@@ -268,6 +237,7 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 		added: [],
 		removed: [],
 		naChanges: [],
+		otherChanges: [],
 		notCompared: [],
 		recovered: [],
 		recoveredBefore: [],
@@ -290,9 +260,7 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 		}
 
 		if ( bt && !at ) {
-			if ( filtersDiffer && !aRows.has( bt.row ) ) {
-				categories.notCompared.push( buildItem( bt, bt, null, 'notCompared' ) );
-			} else if ( filtersDiffer ) {
+			if ( filtersDiffer ) {
 				categories.notCompared.push( buildItem( bt, bt, null, 'notCompared' ) );
 			} else {
 				categories.removed.push( buildItem( bt, bt, null, 'removed' ) );
@@ -300,9 +268,7 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 			continue;
 		}
 		if ( !bt && at ) {
-			if ( filtersDiffer && !bRows.has( at.row ) ) {
-				categories.notCompared.push( buildItem( at, null, at, 'notCompared' ) );
-			} else if ( filtersDiffer ) {
+			if ( filtersDiffer ) {
 				categories.notCompared.push( buildItem( at, null, at, 'notCompared' ) );
 			} else {
 				categories.added.push( buildItem( at, null, at, 'added' ) );
@@ -314,9 +280,11 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 		const ao = at.outcome;
 
 		// Check if a known issue (xfail in before) now passes in after:
-		// In summary-reporter.js, a test marked with test.fail(true, 'KI-...') that
-		// unexpectedly passes in Playwright gets outcome: 'FAIL' with error: null.
-		const isKiUnexpectedPass = bo === 'xfail' && ( ao === 'pass' || ( ao === 'FAIL' && !at.error ) );
+		// In summary-reporter.js (line 45), a test marked with test.fail(true, 'KI-...') that
+		// unexpectedly passes in Playwright has result.status === 'passed', so result.error is null
+		// and summary-reporter records outcome: 'FAIL', error: null, reason: ''.
+		// An xfail test that crashed with a real error has at.error !== null (so xfail -> FAIL with error is a new failure).
+		const isKiUnexpectedPass = bo === 'xfail' && ( ao === 'pass' || ( ao === 'FAIL' && !at.error && !at.reason ) );
 		if ( isKiUnexpectedPass ) {
 			const kiName = extractKiName( bt, bt.reason || at.reason );
 			const item = buildItem( at, bt, { ...at, outcome: 'pass' }, 'kiNowPassing', kiName );
@@ -356,18 +324,25 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 		}
 
 		if ( bo !== ao ) {
-			// Other outcome transitions (e.g. pass -> xfail, skip -> pass)
-			if ( ao === 'xfail' ) {
-				const kiName = extractKiName( at, at.reason );
-				categories.stillXfail.push( buildItem( at, bt, at, 'stillXfail', kiName ) );
-			}
+			// Other outcome transitions (e.g. pass -> xfail, FAIL -> xfail, pass -> skip, skip -> pass, xfail -> skip)
+			const kiName = ( bo === 'xfail' || ao === 'xfail' ) ? extractKiName( ao === 'xfail' ? at : bt, at.reason || bt.reason ) : null;
+			categories.otherChanges.push( buildItem( at, bt, at, 'otherChanges', kiName ) );
 		}
 	}
 
 	// Group changed rows and compute row-level summary + screenshot paths.
 	const allRowNames = [ ...new Set( [ ...bRows, ...aRows ] ) ];
 	const changedRowMap = new Map();
-	const notComparedRows = [];
+	const notComparedRowMap = new Map();
+	for ( const item of categories.notCompared ) {
+		const presentIn = ( bRows.has( item.row ) && aRows.has( item.row ) ) ?
+			( item.beforeOutcome ? 'before (filtered group in after)' : 'after (filtered group in before)' ) :
+			( bRows.has( item.row ) ? 'before' : 'after' );
+		if ( !notComparedRowMap.has( item.row ) ) {
+			notComparedRowMap.set( item.row, { row: item.row, presentIn } );
+		}
+	}
+	const notComparedRows = [ ...notComparedRowMap.values() ];
 
 	function resolveShot( runDirPath, runNameStr, rowName ) {
 		const candidate = runDirPath ?
@@ -388,6 +363,7 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 		...categories.fixed,
 		...categories.kiNowPassing,
 		...categories.naChanges,
+		...categories.otherChanges,
 		...categories.added,
 		...categories.removed
 	];
@@ -396,10 +372,6 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 		const inB = bRows.has( rowName );
 		const inA = aRows.has( rowName );
 		if ( filtersDiffer && ( !inB || !inA ) ) {
-			notComparedRows.push( {
-				row: rowName,
-				presentIn: inB ? 'before' : 'after'
-			} );
 			continue;
 		}
 
@@ -410,20 +382,23 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 
 		const groupChanges = [];
 		for ( const g of groups ) {
-			const bCov = beforeData.coverage && beforeData.coverage.rows && beforeData.coverage.rows[ rowName ] && beforeData.coverage.rows[ rowName ][ g ];
-			const aCov = afterData.coverage && afterData.coverage.rows && afterData.coverage.rows[ rowName ] && afterData.coverage.rows[ rowName ][ g ];
-			const bCell = bCov !== undefined ? bCov : computeCellFromTests( bRowTests.filter( ( t ) => t.group === g ) );
-			const aCell = aCov !== undefined ? aCov : computeCellFromTests( aRowTests.filter( ( t ) => t.group === g ) );
+			const bGroupTests = bRowTests.filter( ( t ) => t.group === g );
+			const aGroupTests = aRowTests.filter( ( t ) => t.group === g );
+			if ( filtersDiffer && ( bGroupTests.length === 0 || aGroupTests.length === 0 ) ) {
+				continue;
+			}
+			const bCell = computeCellFromTests( bGroupTests );
+			const aCell = computeCellFromTests( aGroupTests );
 			if ( bCell !== aCell ) {
 				groupChanges.push( { group: g, beforeCell: bCell || 'not run', afterCell: aCell || 'not run' } );
 			}
 		}
 
-		if ( rowChanges.length === 0 && groupChanges.length === 0 ) {
+		if ( rowChanges.length === 0 ) {
 			continue;
 		}
 
-		const priority = [ 'newFailures', 'fixed', 'kiNowPassing', 'naChanges', 'added', 'removed' ];
+		const priority = [ 'newFailures', 'fixed', 'kiNowPassing', 'naChanges', 'otherChanges', 'added', 'removed' ];
 		let primaryCategory = 'changed';
 		for ( const p of priority ) {
 			if ( rowChanges.some( ( c ) => c.category === p ) ) {
@@ -509,6 +484,7 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 			added: categories.added.length,
 			removed: categories.removed.length,
 			naChanges: categories.naChanges.length,
+			otherChanges: categories.otherChanges.length,
 			notCompared: categories.notCompared.length,
 			notComparedRows: notComparedRows.length,
 			recovered: categories.recovered.length,
@@ -575,6 +551,7 @@ function renderSummaryMd( diff ) {
 		`| Tests added | ${ c.added } | - |`,
 		`| Tests removed | ${ c.removed } | - |`,
 		`| n/a changes | ${ c.naChanges } | - |`,
+		`| Other transitions (e.g. pass/FAIL <-> xfail/skip) | ${ c.otherChanges } | - |`,
 		`| Passed only after re-login or retry (counted apart) | before: ${ c.recoveredBefore }, after: ${ c.recoveredAfter } | ${ diff.rowLists.recovered.length } |`
 	);
 	if ( diff.filtersDiffer || c.notCompared > 0 ) {
@@ -637,6 +614,15 @@ function renderSummaryMd( diff ) {
 		lines.push( '' );
 	}
 
+	if ( diff.categories.otherChanges.length ) {
+		lines.push( '## Other outcome transitions', '' );
+		for ( const item of diff.categories.otherChanges ) {
+			const extra = item.ki ? ` (${ item.ki })` : '';
+			lines.push( `- OTHER \`${ item.row }\` (\`@${ item.group }\` › ${ item.title }): ${ item.beforeOutcome } -> ${ item.afterOutcome }${ extra }` );
+		}
+		lines.push( '' );
+	}
+
 	if ( diff.categories.added.length || diff.categories.removed.length ) {
 		lines.push( '## Tests added or removed', '' );
 		for ( const item of diff.categories.added ) {
@@ -683,7 +669,7 @@ function renderConsoleSummary( diff, relOutDir ) {
 		}
 	}
 	lines.push(
-		`Summary: ${ c.changedRows } changed row(s) | new failures: ${ c.newFailures } (${ c.newFailureRows } rows) | fixed: ${ c.fixed } (${ c.fixedRows } rows) | KI now passing: ${ c.kiNowPassing } (${ c.kiNowPassingRows } rows) | still failing: ${ c.stillFailing } (xfail unchanged: ${ c.stillXfail }) | added: ${ c.added } | removed: ${ c.removed } | n/a changes: ${ c.naChanges } | recovered (re-login/retry): before ${ c.recoveredBefore }, after ${ c.recoveredAfter }${ diff.filtersDiffer ? ` | not compared: ${ c.notCompared } (${ c.notComparedRows } rows)` : '' }`
+		`Summary: ${ c.changedRows } changed row(s) | new failures: ${ c.newFailures } (${ c.newFailureRows } rows) | fixed: ${ c.fixed } (${ c.fixedRows } rows) | KI now passing: ${ c.kiNowPassing } (${ c.kiNowPassingRows } rows) | still failing: ${ c.stillFailing } (xfail unchanged: ${ c.stillXfail }) | added: ${ c.added } | removed: ${ c.removed } | n/a changes: ${ c.naChanges }${ c.otherChanges ? ` | other transitions: ${ c.otherChanges }` : '' } | recovered (re-login/retry): before ${ c.recoveredBefore }, after ${ c.recoveredAfter }${ diff.filtersDiffer ? ` | not compared: ${ c.notCompared } (${ c.notComparedRows } rows)` : '' }`
 	);
 	if ( diff.categories.kiNowPassing.length ) {
 		for ( const item of diff.categories.kiNowPassing ) {
