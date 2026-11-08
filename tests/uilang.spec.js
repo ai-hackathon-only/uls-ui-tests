@@ -87,13 +87,15 @@ test.describe( 'Special:Preferences language field @prefs', () => {
 		await expect( input ).toBeVisible();
 		await expect( input ).toHaveValue( /English/ );
 
-		await input.fill( 'Deutsch' );
-		// On small screens the menu can sit below the fold: scroll it in first.
-		const option = page.locator( '.cdx-menu-item:visible' ).filter( { hasText: 'Deutsch' } ).first();
-		await expect( option, 'a "Deutsch" menu item after typing' ).toBeVisible( { timeout: 10000 } );
-		// Short action timeouts: on Minerva (KI-3) the item can be "visible" but never
-		// scroll into view, and the test must fail on that step, not hit the test timeout.
-		await option.scrollIntoViewIfNeeded( { timeout: 5000 } );
+		// Type key by key into a cleared field: on Minerva a single fill() leaves the
+		// menu unfiltered. The mobile prefs window holds a second copy of the
+		// field; getByRole only matches the visible menu item.
+		await input.scrollIntoViewIfNeeded();
+		await input.fill( '' );
+		await page.waitForTimeout( 300 );
+		await input.pressSequentially( 'Deutsch', { delay: 50 } );
+		const option = page.getByRole( 'option', { name: 'de · Deutsch', exact: true } );
+		await expect( option, 'a "de · Deutsch" menu item after typing' ).toBeVisible( { timeout: 10000 } );
 		await option.click( { timeout: 5000 } );
 		await expect( page.locator( '#mw-input-wplanguage' ) ).toHaveValue( 'de' );
 

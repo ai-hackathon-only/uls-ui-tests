@@ -20,14 +20,6 @@ const ISSUES = [
 		users: null, // all
 		// Feature groups whose tests start from the language button.
 		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen' ]
-	},
-	{
-		id: 'KI-3',
-		title: 'Mobile Special:Preferences language field is empty and shows no suggestions (core, not ULS)',
-		skins: [ 'minerva' ],
-		devices: null,
-		users: [ 'user' ],
-		groups: [ 'prefs' ]
 	}
 ];
 

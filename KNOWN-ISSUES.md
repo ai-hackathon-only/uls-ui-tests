@@ -37,21 +37,3 @@ Not a ULS bug. MediaWiki's EventLogging / WikimediaEvents sends telemetry to
 `http://localhost:8192/v1/events` (EventGate), which is not running on the local
 development wiki, resulting in `net::ERR_CONNECTION_REFUSED [http://localhost:8192/v1/events]`.
 Allow-listed in `tests/support/known-errors.js`.
-
-## KI-3
-**Mobile Special:Preferences: the Language field is empty and typing shows no suggestions.**
-Not a ULS bug: the field is core's `mw.widgets.LanguageSelectWidget` (a Codex lookup). Listed
-because the suite covers GOALS feature 7 and the bug blocks it on Minerva.
-
-- Skin: Minerva (`minerva`, `useformat=mobile`). Devices: mobile and tablet. User: logged in.
-- Steps: open `Special:Preferences`, tap "User profile", look at "Language:", type `Deutsch`.
-- Expected: the field shows "English" (the saved language) and a menu offers "Deutsch", as on the desktop skins.
-- Actual: the field is often empty, and the "Deutsch" menu item never shows, or shows but cannot be
-  scrolled to or clicked (the test fails at one of these steps; both runs on 2026-11-08 failed). The page has three
-  `input[role=combobox]` that all point at the same `aria-controls="v-3"`; the only `.cdx-menu-item`
-  elements are unfiltered and have a zero-size box. So the window seems to hold a copy of the widget
-  without its Vue app (not confirmed in the source).
-- Screenshot: [docs/ki-3-minerva-mobile-prefs-language.png](docs/ki-3-minerva-mobile-prefs-language.png) (mobile, logged in, after typing).
-- Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha
-  `f7d0709ef0c28166422137c3167b0a992b999afd`.
-- In the suite: `tests/support/known-issues.js` marks the `prefs` group on Minerva logged-in rows as expected failures.
