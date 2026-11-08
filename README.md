@@ -38,6 +38,9 @@ exits non-zero if any test had an unexpected result.
 | `ULS_WORKERS` | Number of parallel workers. Capped at the number of accounts. |
 | `ULS_ALLOW_REMOTE` | Set to `1` to allow a wiki that is not `*.localhost` or `127.0.0.1`. |
 | `ULS_NO_PROXY` | Set to `1` to start Chrome with `--no-proxy-server` (sandboxes with an HTTP proxy). |
+| `ULS_RUN` | Save the run under `runs/<name>/` (`results.json` and `COVERAGE.md`) for `npm run compare`. |
+| `ULS_COOKIES` | Semicolon-separated cookies set on the wiki host, e.g. `qa_t439715=old;qa_t439718=old`. |
+| `ULS_SHOTS` | Set to `1` (with `ULS_RUN`) to save one screenshot of the open selector per row in `runs/<name>/shots/<row>.png`. |
 
 The suite refuses any URL on port 8080, and any non-local URL unless
 `ULS_ALLOW_REMOTE=1` is set. To test another wiki, point `ULS_WIKI` at it and give
@@ -100,6 +103,39 @@ Cell values:
 
 A known bug that starts passing shows as `FAIL` too, so a fix gets noticed.
 
+## Compare two versions
+
+To check what a ULS patch changes across the matrix:
+
+```sh
+ULS_RUN=before ULS_SHOTS=1 npm test
+# check out the patch on the wiki
+ULS_RUN=after ULS_SHOTS=1 npm test
+npm run compare -- before after
+```
+
+You can also compare the old and new language selector on the same ULS checkout with QA cookies:
+
+```sh
+ULS_RUN=new ULS_SHOTS=1 npm test
+ULS_RUN=old ULS_SHOTS=1 ULS_COOKIES='qa_t439715=old;qa_t439718=old;qa_t439851=old' npm test
+npm run compare -- new old
+```
+
+`npm run compare -- <before> <after>` reads `runs/<before>/results.json` and
+`runs/<after>/results.json`, prints a summary to the terminal, and writes
+`compare/<before>-vs-<after>/`:
+
+- **`index.html`**: run metadata, warnings, category counts, changed tests, and
+  before/after screenshots side by side for every row that changed.
+- **`summary.md`**: Markdown summary of the comparison.
+- **`phab-draft.txt`**: Phabricator Remarkup ready to paste into a task or patch comment.
+
+The command exits non-zero when there are new failures (`pass` → `FAIL`). At the top it
+warns if the test suite commits differ, if the subset filters differ (rows run in only one
+side are marked "not compared", not removed), or if ULS commit, MediaWiki core commit and
+QA cookies are identical.
+
 ## Add a test
 
 Tests live in `tests/<group>.spec.js`, one file per feature group. The group is the
@@ -143,7 +179,12 @@ tests/support/matrix.js     skins, devices, users, subset filters
 tests/support/fixtures.js   login, gotoWiki, error collector, preference reset
 tests/support/base-url.js   refuses port 8080 and non-local wikis
 tests/support/run-info.js   reads Special:Version
+tests/support/saved-run.js  writes runs/<name>/results.json when ULS_RUN is set
+tests/support/cookies.js    parses ULS_COOKIES for browser contexts
 tests/support/summary-reporter.js   table, report/index.html, COVERAGE.md
+tests/support/compare-html.js       compare/<before>-vs-<after>/index.html
+tests/support/compare-phab.js       compare/<before>-vs-<after>/phab-draft.txt
+bin/compare.js              compares two saved runs (npm run compare)
 KNOWN-ISSUES.md             ULS bugs the suite found (KI-<n>)
 ```
 
