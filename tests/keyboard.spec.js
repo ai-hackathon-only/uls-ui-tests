@@ -45,7 +45,7 @@ async function openSelectorByKeyboard( page, skin ) {
 	return dialog;
 }
 
-test.describe( 'Keyboard accessibility (@keyboard)', () => {
+test.describe( 'Keyboard accessibility @keyboard', () => {
 
 	test( 'Tab and arrow navigation through language list @keyboard', async ( { page, gotoWiki, uls } ) => {
 		applyRowSkips( uls );
