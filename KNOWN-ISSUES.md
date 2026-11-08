@@ -47,6 +47,7 @@ Allow-listed in `tests/support/known-errors.js`.
   2. Inspect the visibility of `#p-lang` / `#other-languages`.
 - Expected: A visible language selector trigger is directly accessible on the screen.
 - Actual: Timeless CSS applies `@media (max-width: 850px) { #other-languages { display: none; } }`, hiding the language trigger portlet unless the user opens the slide-out navigation drawer.
+- Screenshot: [docs/ki-4-timeless-tablet-anon.png](docs/ki-4-timeless-tablet-anon.png) (tablet 820 × 1180, anon): no language button in the header or page tools.
 - Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
 - In the suite: `tests/support/known-issues.js` marks trigger-based feature groups on Timeless tablet and mobile rows as expected failures.
 
@@ -60,6 +61,7 @@ Allow-listed in `tests/support/known-errors.js`.
   3. Attempt to click trigger.
 - Expected: Trigger is actionable and opens the language selector.
 - Actual: MonoBook's fixed-position desktop sidebar navigation (`#column-one`, `#p-navigation`) overlaps `#p-lang`, intercepting pointer events.
+- Screenshot: [docs/ki-5-monobook-mobile-anon.png](docs/ki-5-monobook-mobile-anon.png) (mobile 390 × 844, anon). Measured 09:55: the trigger box is at x = -39, y = 328 (76 × 32, half off-screen), and `document.elementFromPoint` at its centre returns `#p-navigation .pBody`.
 - Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
 - In the suite: `tests/support/known-issues.js` marks trigger-based feature groups on MonoBook mobile rows as expected failures.
 
@@ -73,5 +75,6 @@ Allow-listed in `tests/support/known-errors.js`.
   3. Inspect computed direction of search input (`input.uls-languagefilter`).
 - Expected: Search input computes to `direction: rtl` matching the mirrored RTL dialog.
 - Actual: Timeless skin form input styles override inheritance with `direction: ltr`, causing the search input to remain LTR in RTL mode.
+- Screenshot: [docs/ki-6-timeless-desktop-anon-rtl.png](docs/ki-6-timeless-desktop-anon-rtl.png) (desktop, anon, `uselang=ar`). Measured 09:52: dialog `direction` = `rtl`, search input `direction` = `ltr`.
 - Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
 - In the suite: `tests/support/known-issues.js` marks the `rtl` feature group on Timeless desktop rows as an expected failure.
