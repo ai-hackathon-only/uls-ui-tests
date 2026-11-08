@@ -4,6 +4,7 @@
 'use strict';
 const fs = require( 'fs' );
 const path = require( 'path' );
+const { pixelDiffText } = require( './pixel-diff' );
 
 const ROOT = path.join( __dirname, '..', '..' );
 
@@ -144,7 +145,7 @@ function renderCompareHtml( diff, outDirArg ) {
 			`<a href="${ esc( aRel ) }"><img src="${ esc( aRel ) }" alt="${ esc( `After ${ r.row }` ) }" loading="lazy"></a>` :
 			`<div class="no-shot">no shot (<code>${ esc( aCheck.rel ) }</code>)</div>`;
 		return `<div class="shot-card">
-			<h3><code>${ esc( r.row ) }</code></h3>
+			<h3><code>${ esc( r.row ) }</code>${ r.pixelDiff ? ` <span class="pixel${ r.pixelDiff.overThreshold ? ' over' : '' }">pixel diff ${ esc( pixelDiffText( r.pixelDiff ) ) }</span>` : '' }</h3>
 			<div class="badges">${ summaryBadges }</div>
 			<div class="shot-pair">
 				<div class="shot-col"><h4>Before (<code>${ esc( beforeName ) }</code>)</h4>${ bImg }</div>
@@ -184,6 +185,8 @@ th { background: #f7f7f7; }
 .shot-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
 .shot-col h4 { margin: 0 0 6px; }
 .shot-col img { max-width: 100%; height: auto; border: 1px solid #bbb; background: #fff; }
+.pixel { font-size: 13px; font-weight: normal; padding: 2px 6px; border-radius: 4px; background: #eaf3ff; }
+.pixel.over { background: #fee7e6; color: #b32424; }
 .no-shot { padding: 18px; border: 1px dashed #bbb; color: #666; background: #fff; font-size: 12.5px; }
 </style>
 </head>

@@ -4,6 +4,7 @@
 'use strict';
 const fs = require( 'fs' );
 const path = require( 'path' );
+const { pixelDiffText } = require( './pixel-diff' );
 
 const ROOT = path.join( __dirname, '..', '..' );
 
@@ -184,7 +185,8 @@ function renderComparePhab( diff, outDirArg ) {
 		for ( const r of withShots ) {
 			const bPath = r.beforeShotPath || ( r.beforeShot ? `runs/${ beforeName }/shots/${ r.row }.png` : 'no shot' );
 			const aPath = r.afterShotPath || ( r.afterShot ? `runs/${ afterName }/shots/${ r.row }.png` : 'no shot' );
-			lines.push( `* \`${ r.row }\`: before \`${ bPath }\`, after \`${ aPath }\`` );
+			const pd = r.pixelDiff ? `, pixel diff ${ pixelDiffText( r.pixelDiff ) }` : '';
+			lines.push( `* \`${ r.row }\`: before \`${ bPath }\`, after \`${ aPath }\`${ pd }` );
 		}
 	} else {
 		lines.push(

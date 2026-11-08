@@ -136,6 +136,13 @@ warns if the test suite commits differ, if the subset filters differ (rows run i
 side are marked "not compared", not removed), or if ULS commit, MediaWiki core commit and
 QA cookies are identical.
 
+For each changed row with both screenshots, compare also gives a pixel difference: the share
+of pixels whose colour changed (any channel by more than `ULS_PIXEL_TOLERANCE`, default 16 of
+255). It is marked "over" when it is above `ULS_PIXEL_THRESHOLD` (default 3, in percent) and
+shows in `index.html`, `summary.md` and `phab-draft.txt`. Two runs on the same code differed
+by up to 2.09% (the suggested languages list can change), so a value under 3% is likely noise.
+The pixel difference does not change the exit code.
+
 ## Add a test
 
 Tests live in `tests/<group>.spec.js`, one file per feature group. The group is the
