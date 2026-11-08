@@ -13,6 +13,8 @@
 const fs = require( 'fs' );
 const path = require( 'path' );
 const { rows } = require( './matrix' );
+const { cookieString } = require( './cookies' );
+const savedRun = require( './saved-run' );
 
 const ROOT = path.join( __dirname, '..', '..' );
 
@@ -74,6 +76,8 @@ class SummaryReporter {
 		this.cells = new Map(); // project -> Map(group -> cell)
 		this.groups = new Set();
 		this.notes = []; // { project, group, title, kind, reason }
+		this.tests = []; // saved-run records (saved-run.js)
+		this.runName = savedRun.runName();
 	}
 
 	onTestEnd( test, result ) {
@@ -91,6 +95,17 @@ class SummaryReporter {
 			c.kind = o.kind;
 		}
 		row.set( group, c );
+		const uls = ( test.parent.project().use || {} ).uls || {};
+		const file = path.relative( path.join( ROOT, 'tests' ), test.location.file );
+		const recovered = result.retry > 0 || [ ...( result.annotations || [] ), ...( test.annotations || [] ) ].some( ( a ) => a.type === 'session-lost' );
+		const err = result.error && result.error.message ? result.error.message.replace( /\u001b\[[0-9;]*m/g, '' ).split( '\n' )[ 0 ] : null;
+		this.tests.push( {
+			id: `${ project } › ${ file } › ${ test.title }`,
+			row: project, skin: uls.skin || null, device: uls.device || null, user: uls.user || null,
+			group, file, title: test.title, outcome: o.kind,
+			recovered: recovered && o.kind === 'pass',
+			reason: o.reason ? o.reason.replace( /\u001b\[[0-9;]*m/g, '' ) : null, error: err
+		} );
 		if ( o.kind !== 'pass' ) {
 			this.notes.push( { project, group, title: test.title, kind: o.kind, reason: o.reason || '' } );
 		}
@@ -184,6 +199,34 @@ ${ projects.map( ( p ) => `<tr><th>${ esc( p ) }</th>${ groups.map( ( g ) => { c
 </table><ul>${ this.notes.map( ( n ) => `<li>${ esc( `${ n.kind } · ${ n.project } › ${ n.title }: ${ n.reason }` ) }</li>` ).join( '' ) }</ul>`;
 		fs.mkdirSync( path.join( ROOT, 'report' ), { recursive: true } );
 		fs.writeFileSync( path.join( ROOT, 'report', 'index.html' ), html );
+		if ( this.runName ) {
+			const coverage = { groups, rows: {} };
+			for ( const p of projects ) {
+				coverage.rows[ p ] = Object.fromEntries( groups.map( ( g ) => [ g, cell( p, g ) ] ) );
+			}
+			const dir = savedRun.writeSavedRun( this.runName, {
+				run: {
+					name: this.runName,
+					wiki: info ? info.wiki : process.env.ULS_WIKI || null,
+					ulsCommit: info ? info.ulsCommit : null,
+					ulsCommitDate: info ? info.ulsCommitDate : null,
+					coreCommit: info ? info.coreCommit : null,
+					coreVersion: info ? info.coreVersion : null,
+					...savedRun.suiteState(),
+					skins: info ? info.skins : [],
+					cookies: cookieString(),
+					filters: savedRun.filters(),
+					shots: process.env.ULS_SHOTS === '1',
+					start: new Date( this.start ).toISOString(),
+					seconds: secs,
+					status: result.status
+				},
+				tests: this.tests,
+				coverage
+			} );
+			fs.writeFileSync( path.join( dir, 'COVERAGE.md' ), md.join( '\n' ) );
+			console.log( `Saved run: ${ path.relative( ROOT, dir ) }/results.json (${ this.tests.length } tests)` );
+		}
 		console.log( `Report: report/index.html (summary), playwright-report/index.html (details), ${ path.relative( ROOT, mdFile ) }` );
 	}
 }

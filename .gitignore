@@ -6,3 +6,5 @@ playwright-report/
 *.env
 report/
 scratch/
+runs/
+compare/

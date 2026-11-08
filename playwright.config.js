@@ -5,6 +5,9 @@ const { rows, DEVICES } = require( './tests/support/matrix' );
 const { checkBaseUrl } = require( './tests/support/base-url' );
 
 checkBaseUrl( process.env.ULS_WIKI );
+// Fail early on a bad ULS_RUN name or ULS_COOKIES string.
+require( './tests/support/saved-run' ).runName();
+require( './tests/support/cookies' ).qaCookies( 'http://localhost' );
 const accounts = ( process.env.ULS_USERS || '' ).split( ',' ).filter( Boolean ).length;
 // At most one worker per test account, so logged-in workers never share a user.
 const workers = Math.max( 1, Math.min( Number( process.env.ULS_WORKERS ) || accounts || 1, accounts || 1 ) );
