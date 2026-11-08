@@ -94,7 +94,6 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger, `Language trigger visible for skin ${ uls.skin }` ).toBeVisible();
 
-		await trigger.scrollIntoViewIfNeeded();
 		await trigger.click();
 		const dialog = getSelectorDialog( page );
 		await expect( dialog, 'Selector dialog opens upon clicking language trigger' ).toBeVisible();
@@ -112,7 +111,6 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger ).toBeVisible();
 
-		await trigger.scrollIntoViewIfNeeded();
 		await trigger.click();
 
 		const dialog = getSelectorDialog( page );
@@ -138,7 +136,6 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger ).toBeVisible();
 
-		await trigger.scrollIntoViewIfNeeded();
 		await trigger.click();
 
 		const dialog = getSelectorDialog( page );
@@ -164,7 +161,6 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 		const trigger = getLanguageTrigger( page, uls.skin );
 		await expect( trigger ).toBeVisible();
 
-		await trigger.scrollIntoViewIfNeeded();
 		await trigger.click();
 
 		const dialog = getSelectorDialog( page );
@@ -172,10 +168,10 @@ test.describe( 'Trigger and selector lifecycle @open', () => {
 
 		// Click coordinate outside the selector dialog (away from flyout/dialog)
 		const box = await dialog.boundingBox();
-		if ( box && box.x > 100 ) {
-			await page.mouse.click( 20, 100 );
-		} else if ( box ) {
-			await page.mouse.click( box.x + box.width + 20, 100 );
+		if ( box ) {
+			const clickX = Math.round( box.x + 20 );
+			const clickY = box.y > 60 ? Math.round( box.y - 30 ) : Math.round( box.y + box.height + 30 );
+			await page.mouse.click( clickX, clickY );
 		} else {
 			await page.mouse.click( 20, 20 );
 		}
