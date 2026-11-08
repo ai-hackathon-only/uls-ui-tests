@@ -28,7 +28,7 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
   - `monobook`: Left sidebar `#p-lang` trigger / `.uls-settings-trigger`, `.mw-interlanguage-selector`.
   - `timeless`: Sidebar / page tools portlet `#p-lang` / `.uls-settings-trigger`.
   - `modern`: Left sidebar portlet `#p-lang` / `.uls-settings-trigger`.
-  - `cologneblue`: Left sidebar navigation `#p-lang` / `.uls-settings-trigger`.
+  - `cologneblue`: Expected failure: KI-1 (no ULS trigger; `#p-lang` absent, `ext.uls.rewrite.entrypoints` remains registered).
   - `minerva`: Header / page language icon `.minerva-icon--language` or `.minerva-icon--language-switcher`.
 - **Selector dialog DOM roots:**
   - Rewrite ULS: `.uls-rewrite` (with `.uls-rewrite--mobile` on mobile viewports < 768px, managing the `#/languages` route).
@@ -181,16 +181,16 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 
 | Feature Group | Vector 2022 | Vector legacy | MonoBook | Timeless | Modern | Cologne Blue | Minerva |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **@open** (Trigger & Dialog) | Yes (`#p-lang-btn`) | Yes (`#p-lang`) | Yes (`#p-lang`) | Yes (`#p-lang`) | Yes (`#p-lang`) | Yes (`#p-lang`) | Yes (Mobile trigger) |
-| **@search** (Search & Autonyms) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| **@interlanguage** (Navigation) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| **@suggested** (Recent langs) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| **@interface-language** (Persist) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| **@settings** (Cog / IME / Webfonts)| Yes | Yes | Yes | Yes | Yes | Yes | Yes (quick action) |
+| **@open** (Trigger & Dialog) | Yes (`#p-lang-btn`) | Yes (`#p-lang`) | Yes (`#p-lang`) | Yes (`#p-lang`) | Yes (`#p-lang`) | Expected fail: KI-1 | Yes (Mobile trigger) |
+| **@search** (Search & Autonyms) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
+| **@interlanguage** (Navigation) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
+| **@suggested** (Recent langs) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
+| **@interface-language** (Persist) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
+| **@settings** (Cog / IME / Webfonts)| Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes (quick action) |
 | **@preferences** (Special:Prefs) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) | Yes (user) |
-| **@keyboard** (Full navigation) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| **@rtl** (Mirroring & 390px) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| **@viewport** (Responsive tap) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| **@compact-links** (Compacted) | `n/a: v2022 dropdown` | Yes | Yes | Yes | Yes | Yes | `n/a: minerva` |
+| **@keyboard** (Full navigation) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
+| **@rtl** (Mirroring & 390px) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
+| **@viewport** (Responsive tap) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
+| **@compact-links** (Compacted) | `n/a: v2022 dropdown` | Yes | Yes | Yes | Yes | Expected fail: KI-1 | `n/a: minerva` |
 | **@setlang** (?setlang= dialog) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| **@errors** (No 4xx/5xx/console) | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| **@errors** (No 4xx/5xx/console) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
