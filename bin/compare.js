@@ -8,6 +8,7 @@
 const fs = require( 'fs' );
 const path = require( 'path' );
 const { knownIssuesFor } = require( '../tests/support/known-issues' );
+const { pixelDiff, pixelDiffText } = require( '../tests/support/pixel-diff' );
 
 const ROOT = path.join( __dirname, '..' );
 
@@ -411,6 +412,14 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 		const bShot = resolveShot( beforeDir, beforeName, rowName );
 		const aShot = resolveShot( afterDir, afterName, rowName );
 		const kis = [ ...new Set( rowChanges.map( ( c ) => c.ki ).filter( Boolean ) ) ];
+		let pd = null;
+		if ( bShot && aShot ) {
+			try {
+				pd = pixelDiff( bShot.absPath, aShot.absPath );
+			} catch ( e ) {
+				pd = { error: e.message };
+			}
+		}
 
 		changedRowMap.set( rowName, {
 			row: rowName,
@@ -425,7 +434,8 @@ function compareRuns( beforeData, afterData, opts = {} ) {
 			afterShot: aShot ? aShot.relFromOut : null,
 			beforeShotPath: bShot ? bShot.relFromRoot : null,
 			afterShotPath: aShot ? aShot.relFromRoot : null,
-			hasShots: Boolean( bShot || aShot )
+			hasShots: Boolean( bShot || aShot ),
+			pixelDiff: pd
 		} );
 	}
 
@@ -564,8 +574,8 @@ function renderSummaryMd( diff ) {
 		lines.push( '0 rows changed between these runs.', '' );
 	} else {
 		lines.push(
-			'| Row | Category | Group changes | Screenshots |',
-			'|---|---|---|---|'
+			'| Row | Category | Group changes | Pixel diff | Screenshots |',
+			'|---|---|---|---|---|'
 		);
 		for ( const r of diff.changedRows ) {
 			const gText = r.groupChanges.map( ( g ) => `@${ g.group }: ${ g.beforeCell } -> ${ g.afterCell }` ).join( '; ' ) ||
@@ -577,7 +587,7 @@ function renderSummaryMd( diff ) {
 			if ( r.afterShotPath ) {
 				shots.push( `after: \`${ r.afterShotPath }\`` );
 			}
-			lines.push( `| \`${ r.row }\` | ${ r.category } | ${ gText } | ${ shots.join( ', ' ) || 'none' } |` );
+			lines.push( `| \`${ r.row }\` | ${ r.category } | ${ gText } | ${ pixelDiffText( r.pixelDiff ) } | ${ shots.join( ', ' ) || 'none' } |` );
 		}
 		lines.push( '' );
 	}
