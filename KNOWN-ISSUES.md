@@ -20,6 +20,12 @@ Not a ULS bug. The test wiki has no `/favicon.ico` (404), and Chrome logs
 - Actual: no button. `mw.loader.getState( 'ext.uls.rewrite.entrypoints' )` stays `registered` (never loads),
   there is no `#p-lang`, `#p-lang-btn`, `.mw-interlanguage-selector`, `.uls-trigger` or `.uls-settings-trigger`.
   The page shows only the plain "In other languages" links (24 `.interlanguage-link`, each list shown twice).
+- Also with the QA cookie `qa_t439851=personal` (`wgULSPosition` = `personal`) and `=old`: no `#pt-uls`, no
+  `.uls-settings-trigger` (browser count 0 after `networkidle`, anon desktop), so the `settings` group is
+  covered too.
+- Likely cause (seat 5's source read): Cologne Blue puts its language list in `#langlinks`, but ULS looks only
+  for `.mw-portlet-lang, #p-lang` (`ext.uls.interface.js:1024`) and `#p-lang-btn` (`:64`). So the WIP patch
+  lists the skin as supported without handling its markup.
 - Screenshot: [docs/ki-1-cologneblue-desktop-anon.png](docs/ki-1-cologneblue-desktop-anon.png) (desktop, anon).
 - Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515` (13:54, 6 November 2026),
   MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
