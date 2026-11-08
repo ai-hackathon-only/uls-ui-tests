@@ -123,6 +123,18 @@ function renderCompareHtml( diff, outDirArg ) {
 		`<div class="warnings"><strong>Warnings:</strong><ul>${ warnings.map( ( w ) => `<li>${ esc( w ) }</li>` ).join( '' ) }</ul></div>` :
 		'';
 
+	const gerritHtml = diff.gerrit ? ( () => {
+		const g = diff.gerrit;
+		const label = g.number != null ? `Gerrit change ${ g.number }` : `Gerrit change ${ g.changeId || g.query }`;
+		if ( g.matched ) {
+			const beforeNote = g.beforePatchSet != null ?
+				`; before run matches patch set ${ esc( g.beforePatchSet ) } (<code>${ esc( shortSha( g.beforeCommit ) ) }</code>)` :
+				'';
+			return `<p class="gerrit-info"><strong>Gerrit:</strong> <a href="${ esc( g.url ) }">${ esc( label ) }, patch set ${ esc( g.patchSet ) }</a> — “${ esc( g.subject ) }” (matches after ULS commit <code>${ esc( shortSha( g.afterCommit ) ) }</code>${ beforeNote })</p>`;
+		}
+		return `<p class="gerrit-info"><strong>Gerrit:</strong> <a href="${ esc( g.url ) }">${ esc( label ) }</a> — “${ esc( g.subject ) }” (no patch set matches after ULS commit <code>${ esc( shortSha( g.afterCommit ) ) }</code>)</p>`;
+	} )() : '';
+
 	const statusBanner = counts.newFailures > 0 ?
 		`<div class="banner fail">RESULT: ${ esc( counts.newFailures ) } new failure(s) in ${ esc( counts.newFailureRows ) } row(s) (exit code 1)</div>` :
 		`<div class="banner pass">RESULT: 0 new failures (exit code 0)</div>`;
@@ -193,6 +205,7 @@ th { background: #f7f7f7; }
 <body>
 <h1>ULS Compare: <code>${ esc( beforeName ) }</code> vs <code>${ esc( afterName ) }</code></h1>
 ${ statusBanner }
+${ gerritHtml }
 ${ warnHtml }
 
 <h2>Run metadata</h2>
