@@ -53,30 +53,64 @@ async function resetPrefs( context ) {
 			return ( await fetch( api, { method: 'POST', body: form } ) ).json();
 		} );
 		if ( body.options !== 'success' ) {
-			throw new Error( `Preference reset failed: ${ JSON.stringify( body ) }` );
+			// Say whether the browser lost the session cookie or the wiki dropped
+			// the session behind a cookie it still sends (issue #53).
+			const cookies = ( await context.cookies( WIKI ) ).map( ( c ) => c.name ).filter( ( n ) => /_session$/.test( n ) );
+			const who = await page.evaluate( async () => ( await ( await fetch( '/w/api.php?action=query&meta=userinfo&format=json' ) ).json() ).query.userinfo );
+			const err = new Error( `Preference reset failed: ${ JSON.stringify( body ) }; session cookie in context: ${ cookies.join( ',' ) || 'none' }; userinfo: ${ JSON.stringify( who ) }` );
+			err.sessionLost = !!( body.error && body.error.code === 'notloggedin' && who && who.anon !== undefined );
+			throw err;
 		}
 	} finally {
 		await page.close();
 	}
 }
 
-async function login( browser, username, file ) {
+// The wiki keeps sessions in its main object cache (APCu). Under a full
+// matrix run that cache can drop sessions, which shows up as "notloggedin"
+// or as the login form's session-hijacking error (issue #53). Both are
+// failures of the test wiki, not of ULS, so the fixtures (never a test body)
+// log in once more and leave an annotation that says so.
+const SESSION_FAILURE = /problem with your login session|session hijacking/i;
+
+async function loginOnce( browser, username, file ) {
 	const ctx = await browser.newContext();
-	const page = await ctx.newPage();
-	await page.goto( `${ WIKI }/w/index.php?title=Special:UserLogin&useskin=vector-2022&useformat=desktop` );
-	await page.fill( '#wpName1', username );
-	await page.fill( '#wpPassword1', process.env.ULS_PASSWORD || '' );
-	await page.click( '#wpLoginAttempt' );
-	await page.waitForURL( ( u ) => !u.searchParams.has( 'title' ) || !/UserLogin/.test( u.toString() ) );
-	await page.waitForFunction( () => window.mw && mw.config && mw.config.get( 'skin' ) );
-	const name = await page.evaluate( () => mw.config.get( 'wgUserName' ) );
-	if ( name !== username ) {
-		throw new Error( `Login failed for ${ username } (wgUserName=${ name })` );
+	try {
+		const page = await ctx.newPage();
+		await page.goto( `${ WIKI }/w/index.php?title=Special:UserLogin&useskin=vector-2022&useformat=desktop` );
+		await page.fill( '#wpName1', username );
+		await page.fill( '#wpPassword1', process.env.ULS_PASSWORD || '' );
+		await page.click( '#wpLoginAttempt' );
+		await page.waitForURL( ( u ) => !u.searchParams.has( 'title' ) || !/UserLogin/.test( u.toString() ) );
+		await page.waitForFunction( () => window.mw && mw.config && mw.config.get( 'skin' ) );
+		const name = await page.evaluate( () => mw.config.get( 'wgUserName' ) );
+		if ( name !== username ) {
+			const msg = ( await page.locator( '.mw-message-box-error, .errorbox, .cdx-message--error' ).allInnerTexts() ).join( ' | ' ).trim();
+			return { error: `Login failed for ${ username } (wgUserName=${ name }); page says: ${ msg || '(no error message)' }`, sessionLost: SESSION_FAILURE.test( msg ) };
+		}
+		fs.mkdirSync( AUTH_DIR, { recursive: true } );
+		await ctx.storageState( { path: file } );
+		await resetPrefs( ctx );
+		return {};
+	} finally {
+		await ctx.close();
 	}
-	fs.mkdirSync( AUTH_DIR, { recursive: true } );
-	await ctx.storageState( { path: file } );
-	await resetPrefs( ctx );
-	await ctx.close();
+}
+
+// Returns a note when a lost session needed a second login, else null.
+async function login( browser, username, file ) {
+	const first = await loginOnce( browser, username, file );
+	if ( !first.error ) {
+		return null;
+	}
+	if ( !first.sessionLost ) {
+		throw new Error( first.error );
+	}
+	const second = await loginOnce( browser, username, file );
+	if ( second.error ) {
+		throw new Error( `${ first.error }; second login: ${ second.error }` );
+	}
+	return first.error;
 }
 
 const test = base.test.extend( {
@@ -96,7 +130,10 @@ const test = base.test.extend( {
 			throw new Error( `No account for worker ${ workerInfo.parallelIndex }; ULS_USERS has ${ list.length }` );
 		}
 		const file = path.join( AUTH_DIR, `${ name }.json` );
-		await login( browser, name, file );
+		const note = await login( browser, name, file );
+		if ( note ) {
+			console.warn( `[session-lost] worker login: ${ note }` );
+		}
 		await use( file );
 	}, { scope: 'worker' } ],
 
@@ -110,10 +147,22 @@ const test = base.test.extend( {
 	},
 
 	// Auto fixture: logged-in rows reset preferences after each test, even on failure.
-	resetPrefsAfter: [ async ( { context, uls }, use ) => {
+	// If the wiki dropped the session (notloggedin, see #53), log in again,
+	// which also resets the preferences and refreshes the storage state file,
+	// and annotate the test so the report shows it.
+	resetPrefsAfter: [ async ( { context, uls, browser, authState, userName }, use, testInfo ) => {
 		await use();
-		if ( uls.user === 'user' ) {
+		if ( uls.user !== 'user' ) {
+			return;
+		}
+		try {
 			await resetPrefs( context );
+		} catch ( err ) {
+			if ( !err.sessionLost ) {
+				throw err;
+			}
+			testInfo.annotations.push( { type: 'session-lost', description: `wiki dropped the session of ${ userName } before the preference reset; logged in again. ${ err.message }` } );
+			await login( browser, userName, authState );
 		}
 	}, { auto: true } ],
 
