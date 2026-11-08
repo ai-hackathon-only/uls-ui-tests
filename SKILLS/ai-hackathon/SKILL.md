@@ -1,6 +1,6 @@
 ---
 name: ai-hackathon
-description: Take part as one AI agent in a fully-AI, publicly disclosed "hackathon" run in ONE GitHub repo through GitHub Apps (issues, PRs, Discussions). Covers GitHub-rules compliance (ToS machine accounts, Acceptable Use: no spam / bulk / inauthentic activity, rate limits), mandatory AI-disclosure footers, write budgets, the time box and the stop-when-done rule. Use when the user says /ai-hackathon, "AI hackathon", or starts agents on a repo that contains a GOALS.md with an `ai-hackathon:` block.
+description: Take part as one AI agent in a fully-AI, publicly disclosed "hackathon" run in ONE GitHub repo through GitHub Apps (issues, PRs, Discussions). Covers GitHub-rules compliance (ToS machine accounts, Acceptable Use: no spam / bulk / inauthentic activity, rate limits), AI disclosure (GOALS banner, [bot] accounts, commit trailers), write budgets, the time box and the stop-when-done rule. Use when the user says /ai-hackathon, "AI hackathon", or starts agents on a repo that contains a GOALS.md with an `ai-hackathon:` block.
 ---
 
 # AI Hackathon — agent rules
@@ -16,7 +16,7 @@ Sources: GitHub Terms of Service §B.3 and the Acceptable Use Policies §4. See 
 1. **One repo only.** Act only in the hackathon repo named in GOALS.md. Never open issues, PRs, comments, reviews or discussions on any other repo, and never touch a human's account or project. Breaking this is the "spam" in AUP §4.
 2. **No rank or social signals.** Never star, watch, follow, fork, sponsor or add reactions to boost anything. AUP §4 bans "rank abuse, such as automated starring or following" and "coordinated inauthentic activity".
 3. **Never pretend to be human.** Act only through your GitHub App installation token (shown as `name[bot]`). Never use the human's personal token or gh login to post. Never create GitHub accounts: ToS: "Accounts registered by 'bots' or other automated methods are not permitted."
-4. **Disclose every write.** Every issue, PR, comment, review and discussion body ends with the footer in §3. Every commit carries the trailer in §3. `bin/hk-gh` adds these for you. Always post through it.
+4. **Disclose every write.** You post only as your `[bot]` account, through `bin/hk-gh`, and never claim or imply that a human wrote anything. The GOALS.md banner and the App profiles disclose the event, so message bodies carry no footer unless the owner turns it on (§3). Every commit carries the trailer in §3.
 5. **No @-mentions of humans.** Never write `@someone` for a real GitHub user, except the owner named in GOALS.md and only in an `ask-human` issue. Put code like `@types/node` in backticks. Mentioning other agents' bots is fine.
 6. **No CI, no Actions, no workflows.** Never add `.github/workflows/`, Actions, or bots that fire on events. The Apps have no `actions`/`workflows` permission, so a push containing workflows is rejected anyway. Don't try to work around this.
 7. **Stay far under the rate limits.** GitHub's secondary limit is 80 content-creating requests/minute and 500/hour per identity. Your budget is much lower (§4). On HTTP 403/429 with "secondary rate limit" or a `retry-after` header: stop, wait at least `retry-after` (or 60 s if there is none), and halve your pace for the rest of the event.
@@ -37,7 +37,12 @@ Sources: GitHub Terms of Service §B.3 and the Acceptable Use Policies §4. See 
 - **Evidence has numbers.** "Should be fast" or "looks fine" is not evidence. Give the command you ran and its output, a timing, or a screenshot, or write "not run".
 - **Interactive features need an interaction check.** A static screenshot does not prove that search, filters, buttons or a 3D viewer work: the page can look right while its script failed to load. For each interactive goal, give a scripted browser run on the live URL (type, click, then read the result, e.g. "typed lion → 9 of 500"), plus the browser console errors (none, or list them). If you cannot run one, write "interaction not checked".
 - **Who opens what.** Seat 1 opens `Kickoff`, `Check-in` and the `Retro` discussion. If seat 1 has not done it 10 minutes after it is due, the next seat by number does.
-- **Sign-off before the end.** The `Plan & roles` issue closes only after every seat has replied in `Check-in` with "goals met, signed off" (or "not met: …"). A seat that is down (usage limit) is covered by the reviewer of the other AI family.
+- **Sign-off before the end.** The `Plan & roles` issue closes only after every seat has replied in `Check-in` with "goals met, signed off" (or "not met: …"). A seat that is down (usage limit, quota, HTTP 429) is covered by its `backup` seat from GOALS.md: the backup signs off and writes a short retro for it, marked "written by seat N for seat M". If the backup is also down or done, the next seat by number that is still running does it.
+- **Jobs must match the seat's rights.** Read each seat's `perms` and `browser` in GOALS.md before handing it work. A `reviewer` seat can't push branches or open PRs (`gh pr create` returns 403): when it has a patch, it names a builder seat, which pushes it as a PR crediting the reviewer. Only seats with `browser: yes` run browser tests or full runs; seats with `browser: no` write and review code and ask a browser seat to run it (see "Run requests" below).
+- **Run requests.** A seat that can't run something posts one comment on the PR: `RUN REQUEST: <exact command>` plus what result it expects. The first browser seat to reply `running` owns it and posts the result (command, numbers, log path) within 2 rounds.
+- **Freeze.** GOALS.md sets `freeze` (default: 45 minutes before `end`). After it, no new feature PRs: only the final evidence runs and fixes for what they show. Plan so the final runs fit between the freeze and the end with time for one fix and a rerun.
+- **Retries are not clean passes.** If a check passed only after a retry, a re-login, a reload or a longer timeout, report it apart from clean passes (e.g. "412 passed, 9 passed after re-login, 0 failed"). Never fold recovered results into the pass count.
+- **Long jobs run in the background.** A turn is cut off after about 10 minutes. Anything longer (a full test matrix, a batch export) runs with `SKILLS/background-run/` when it exists: a lock, `nohup`, a log in the run folder, and the result read in a later round.
 - **Browser and timing evidence is reproducible.** Local servers bind `127.0.0.1` (macOS Python can bind IPv6 only and Chrome then fails). Name the script path and the exact command in the PR, use the shared browser skill in `SKILLS/` if there is one instead of writing a new one, and give any timing with the machine named.
 - **Stretch work may change any code** through a normal reviewed PR, including code another seat wrote.
 - **Waiting is measured in minutes, not rounds.** Rounds run in parallel, so any rule that says "wait N rounds" means N × round_minutes after the timestamp of the comment you are waiting on.
@@ -50,7 +55,7 @@ Sources: GitHub Terms of Service §B.3 and the Acceptable Use Policies §4. See 
 
 ## 3. Disclosure formats (exact)
 
-Footer for every issue, PR, comment, review and discussion body (`hk-gh` appends it):
+Message bodies: no footer by default (owner decision, 2026-11-08). Don't add one yourself. If the owner turns it on for a run (`FOOTER_ON` file in the run folder), `hk-gh` appends this:
 
 ```
 ---
@@ -86,12 +91,14 @@ GOALS.md sets `start`, `end` (with timezone) and `when_done_early`.
 - `when_done_early: polish-until-end` is allowed only if the owner chose it explicitly. Even then, keep to the budget in §4 and post no churn PRs (renames, reformatting, rewording).
 - A file `STOP` in the run folder, or an `ask-human` issue from the owner saying "stop", ends everything immediately.
 
+**GOALS.md belongs to the owner.** Agents never edit it, not even to tick boxes. Put the evidence for each "Done when" line in `docs/DONE.md` (line, link to the PR or run log, numbers) through a normal PR; that file is what "tick the line" means. Counts in GOALS.md ("at most 2 open PRs") include what was already open at the start of the round.
+
 **Retro (each agent posts one, 10 lines or fewer):** what the goal said, what you built, where the instructions were ambiguous (quote the line), which skills from `SKILLS/` you used or added and which skills or permissions you were missing, the writes and rounds you used, and what you would change in GOALS.md.
 
 ## 6. Tools
 
 - `bin/hk-env <seat>`: export `GH_TOKEN` (installation token, about 1 h) plus the git author for this seat.
-- `bin/hk-gh <gh args…>`: wrapper around `gh` that checks the budget, sleeps to keep the spacing, appends the footer to `--body`, and logs to `runs/<repo>/ledger.tsv`.
+- `bin/hk-gh <gh args…>`: wrapper around `gh` that checks the budget, sleeps to keep the spacing, appends the footer to `--body` only when it is turned on, and logs to `runs/<repo>/ledger.tsv`.
 - Discussions are GraphQL-only. Use `bin/hk-gh discussion-create "<title>" "<body>" [category]`, `bin/hk-gh discussion-comment <discussion-number> "<body>" [reply-to-comment-id]` (prints the new comment's url and id), `bin/hk-gh discussion-comments <number>` (read only: comments, replies and their ids) and `bin/hk-gh discussion-answer <comment-id>` (Q&A categories: mark as answer, counts as a write).
 
 ## Sources

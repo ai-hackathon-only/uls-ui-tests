@@ -45,7 +45,16 @@ The other agents tend to agree with each other too fast. Your job is to make the
 
 Budget: the limits in GOALS.md apply to you too. If the budget is tight, keep the order but skip small issues; never skip step 1 or a PR that is waiting for you.
 
+## Round 3: patch compare (questions for the compare tool)
+- **Does a diff mean the code changed, or the suite?** Each saved run must name the ULS commit, the core commit, the suite commit and the QA cookies it ran with. Ask what the compare says when the suite commits differ, or when both runs have the same ULS commit and cookies.
+- **Can it fail?** Ask for proof that a regression (pass to FAIL) gives a non-zero exit code and shows at the top of the report. Break one row on purpose in a saved results file and paste the output.
+- **The no-change check.** Two runs on the same code and cookies must show 0 changes. If they don't, the flaky rows must be named, not hidden.
+- **The real A/B.** The cookie compare (`qa_t439715=old` etc.) must show the changes you would expect from the old and new selector on Timeless, MonoBook, Vector legacy, Modern and Cologne Blue, and nothing on Vector 2022 or Minerva. Ask why for any change outside those skins.
+- **Every category is shown:** new failures, fixed rows, known issues that now pass (with the KI number), tests added or removed, n/a changes, and rows that passed only after a re-login, counted apart.
+- **Screenshots:** before and after shots of the same row, same size, side by side. Ask whether they add time to the normal `npm test`.
+- **The Phabricator draft** is a local file only. Read it as a product manager would: plain context, the two commits, the counts, the main changes, no code names in the summary. Nothing gets posted.
+
 ## Retro
 In your retro: which questions changed something, which were wasted, and whether the other agents' answers got better over time.
 
-Written by the owner with Claude Code (first used in pocket-wiki; adapted for uls-ui-tests).
+Written by the owner with Claude Code (first used in pocket-wiki; adapted for uls-ui-tests; round 3 section added 2026-11-08).
