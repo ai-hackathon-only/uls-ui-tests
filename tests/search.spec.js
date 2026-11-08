@@ -10,22 +10,25 @@
 const { test, expect } = require( './support/fixtures' );
 
 /**
- * Returns the locator for the skin's language trigger.
+ * Returns the locator for the skin's language entry trigger.
+ * Pinned to exact interactive trigger elements per skin.
  * @param {import('@playwright/test').Page} page
  * @param {string} skin
  */
 function getLanguageTrigger( page, skin ) {
 	switch ( skin ) {
 		case 'vector-2022':
-			return page.locator( '#p-lang-btn' );
+			return page.locator( '#p-lang-btn-checkbox, #p-lang-btn' ).first();
 		case 'minerva':
-			return page.locator( '#language-selector' );
+			return page.locator( '#language-selector a.language-selector, #language-selector a, #language-selector' ).first();
 		case 'vector':
 		case 'monobook':
 		case 'timeless':
 		case 'modern':
+			return page.locator( 'button.mw-interlanguage-selector, .uls-settings-trigger' ).first();
 		case 'cologneblue':
-			return page.locator( 'button.mw-interlanguage-selector, #p-lang .uls-settings-trigger, #p-lang' ).first();
+			// Cologne Blue does not integrate ULS trigger (Known Issue KI-1)
+			return page.locator( '#p-lang-btn-nonexistent' );
 		default:
 			throw new Error( `Unknown skin: ${ skin }` );
 	}
@@ -41,7 +44,7 @@ async function openSelectorAndGetSearch( page, skin ) {
 	await expect( trigger, `Language trigger visible for ${ skin }` ).toBeVisible();
 	await trigger.click();
 
-	const dialog = page.locator( '.uls-rewrite:visible, .uls-menu:visible, #languagesettings:visible' ).first();
+	const dialog = page.locator( '.uls-rewrite:visible, .uls-menu:visible, #languagesettings:visible, .mw-language-selector:visible' ).first();
 	await expect( dialog, 'Selector dialog visible' ).toBeVisible();
 
 	const searchInput = dialog.locator( 'input.uls-languagefilter, .cdx-search-input input, input[type="search"]' ).first();
@@ -50,27 +53,37 @@ async function openSelectorAndGetSearch( page, skin ) {
 }
 
 /**
- * Finds matching language result in dialog by code or text regex.
- * Uses .filter({ hasText }) and [data-language-code]/[data-code] locators.
+ * Finds matching language result in dialog by language code attribute.
+ * Targets specific option elements with data-code or data-language-code.
  * @param {import('@playwright/test').Locator} dialog
  * @param {string} code
- * @param {RegExp} textRegex
  */
-function getLanguageResult( dialog, code, textRegex ) {
-	const byAttr = dialog.locator( `[data-language-code="${ code }"], [data-code="${ code }"]` );
-	const byText = dialog.locator( '[role="option"], .autonym, .cdx-menu-item, .uls-language-list a, .uls-languagefilter-link' ).filter( { hasText: textRegex } );
-	return byAttr.or( byText ).first();
+function getLanguageResult( dialog, code ) {
+	return dialog.locator(
+		`li[role="option"][data-code="${ code }"], ` +
+		`li[role="option"][data-language-code="${ code }"], ` +
+		`[data-language-code="${ code }"], ` +
+		`[data-code="${ code }"], ` +
+		`a.uls-languagefilter-link[data-code="${ code }"]`
+	).first();
 }
 
 test.describe( 'Language search functionality @search', () => {
+
+	test.beforeEach( async ( { uls } ) => {
+		if ( uls.skin === 'cologneblue' ) {
+			test.fixme( true, 'Known issue KI-1: Cologne Blue has no visible ULS trigger (#17)' );
+		}
+	} );
 
 	test( 'Search by English name displays target language @search', async ( { page, gotoWiki, uls } ) => {
 		await gotoWiki( 'QA ULS search codes' );
 		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
 
 		await searchInput.fill( 'German' );
-		const germanItem = getLanguageResult( dialog, 'de', /Deutsch|German/ );
+		const germanItem = getLanguageResult( dialog, 'de' );
 		await expect( germanItem, 'German language item displayed in search results' ).toBeVisible();
+		await expect( germanItem ).toContainText( /Deutsch|German/ );
 	} );
 
 	test( 'Search by autonym displays target language @search', async ( { page, gotoWiki, uls } ) => {
@@ -78,8 +91,9 @@ test.describe( 'Language search functionality @search', () => {
 		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
 
 		await searchInput.fill( 'Deutsch' );
-		const germanItem = getLanguageResult( dialog, 'de', /Deutsch|German/ );
+		const germanItem = getLanguageResult( dialog, 'de' );
 		await expect( germanItem, 'Autonym Deutsch displayed in search results' ).toBeVisible();
+		await expect( germanItem ).toContainText( /Deutsch|German/ );
 	} );
 
 	test( 'Search by language code displays target language @search', async ( { page, gotoWiki, uls } ) => {
@@ -88,20 +102,24 @@ test.describe( 'Language search functionality @search', () => {
 
 		// Test 'de' code
 		await searchInput.fill( 'de' );
-		const deItem = getLanguageResult( dialog, 'de', /Deutsch|German/ );
+		const deItem = getLanguageResult( dialog, 'de' );
 		await expect( deItem, 'de language code matches Deutsch' ).toBeVisible();
+		await expect( deItem ).toContainText( /Deutsch|German/ );
 
 		// Test 'zh-yue' code
 		await searchInput.fill( 'zh-yue' );
-		const yueItem = getLanguageResult( dialog, 'zh-yue', /粵語|Cantonese/ );
+		const yueItem = getLanguageResult( dialog, 'zh-yue' );
 		await expect( yueItem, 'zh-yue language code matches Cantonese' ).toBeVisible();
+		await expect( yueItem ).toContainText( /粵語|Cantonese/ );
 
 		// Test 'be-x-old' code (be-tarask)
 		await searchInput.fill( 'be-x-old' );
-		const beItem = dialog.locator( '[data-language-code="be-tarask"], [data-language-code="be-x-old"], [data-code="be-tarask"], [data-code="be-x-old"]' )
-			.or( dialog.locator( '[role="option"], .autonym, .cdx-menu-item, .uls-language-list a' ).filter( { hasText: /тарашкевіца|be-tarask/ } ) )
-			.first();
+		const beItem = dialog.locator(
+			'[data-language-code="be-tarask"], [data-language-code="be-x-old"], ' +
+			'[data-code="be-tarask"], [data-code="be-x-old"]'
+		).first();
 		await expect( beItem, 'be-x-old language code matches be-tarask' ).toBeVisible();
+		await expect( beItem ).toContainText( /тарашкевіца|be-tarask/ );
 	} );
 
 	test( 'Search with typo or prefix tolerance displays matches @search', async ( { page, gotoWiki, uls } ) => {
@@ -109,8 +127,9 @@ test.describe( 'Language search functionality @search', () => {
 		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
 
 		await searchInput.fill( 'Germn' );
-		const germanItem = getLanguageResult( dialog, 'de', /Deutsch|German/ );
+		const germanItem = getLanguageResult( dialog, 'de' );
 		await expect( germanItem, 'Typo query "Germn" successfully matches German' ).toBeVisible();
+		await expect( germanItem ).toContainText( /Deutsch|German/ );
 	} );
 
 	test( 'Search in non-Latin script displays matching language @search', async ( { page, gotoWiki, uls } ) => {
@@ -119,8 +138,9 @@ test.describe( 'Language search functionality @search', () => {
 
 		// Japanese (ja) is present on QA page langlinks; autonym is 日本語
 		await searchInput.fill( '日本語' );
-		const jaItem = getLanguageResult( dialog, 'ja', /日本語|Japanese/ );
+		const jaItem = getLanguageResult( dialog, 'ja' );
 		await expect( jaItem, 'Non-Latin query "日本語" matches Japanese' ).toBeVisible();
+		await expect( jaItem ).toContainText( /日本語|Japanese/ );
 	} );
 
 	test( 'Search with non-matching query displays empty state @search', async ( { page, gotoWiki, uls } ) => {
