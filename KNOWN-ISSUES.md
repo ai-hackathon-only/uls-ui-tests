@@ -37,3 +37,28 @@ Not a ULS bug. MediaWiki's EventLogging / WikimediaEvents sends telemetry to
 `http://localhost:8192/v1/events` (EventGate), which is not running on the local
 development wiki, resulting in `net::ERR_CONNECTION_REFUSED [http://localhost:8192/v1/events]`.
 Allow-listed in `tests/support/known-errors.js`.
+
+## KI-4
+**Timeless hides language selector trigger in collapsed navigation on viewports narrower than 851px.**
+
+- Skins: `timeless`. Devices: tablet (820px), mobile (390px). Users: anonymous and logged in.
+- Steps:
+  1. Open page `QA ULS search codes` with Timeless (`useskin=timeless`) at viewport width < 851px.
+  2. Inspect the visibility of `#p-lang` / `#other-languages`.
+- Expected: A visible language selector trigger is directly accessible on the screen.
+- Actual: Timeless CSS applies `@media (max-width: 850px) { #other-languages { display: none; } }`, hiding the language trigger portlet unless the user opens the slide-out navigation drawer.
+- Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
+- In the suite: `tests/support/known-issues.js` marks trigger-based feature groups on Timeless tablet and mobile rows as expected failures.
+
+## KI-5
+**MonoBook fixed sidebar navigation overlaps and intercepts language trigger on mobile viewports.**
+
+- Skins: `monobook`. Devices: mobile (390px). Users: anonymous and logged in.
+- Steps:
+  1. Open page `QA ULS search codes` with MonoBook (`useskin=monobook`) on a mobile viewport (390 × 844).
+  2. Locate language trigger (`button.mw-interlanguage-selector`).
+  3. Attempt to click trigger.
+- Expected: Trigger is actionable and opens the language selector.
+- Actual: MonoBook's fixed-position desktop sidebar navigation (`#column-one`, `#p-navigation`) overlaps `#p-lang`, intercepting pointer events.
+- Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
+- In the suite: Marked with `test.fail( true, 'KI-5: MonoBook sidebar navigation overlaps language trigger on mobile viewports' )` in `tests/open.spec.js`.
