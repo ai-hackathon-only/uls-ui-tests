@@ -17,9 +17,6 @@ const { getLanguageTrigger, getSelectorDialog } = require( './support/uls-helper
  */
 function applyRowSkips( uls ) {
 	markKnownIssues( test, uls, 'suggested' );
-	if ( uls.skin === 'monobook' && uls.device === 'mobile' ) {
-		test.fail( true, 'KI-5: MonoBook sidebar navigation overlaps language trigger on mobile viewports' );
-	}
 }
 
 test.describe( 'Suggested and previously used languages @suggested', () => {

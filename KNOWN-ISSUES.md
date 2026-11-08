@@ -61,4 +61,4 @@ Allow-listed in `tests/support/known-errors.js`.
 - Expected: Trigger is actionable and opens the language selector.
 - Actual: MonoBook's fixed-position desktop sidebar navigation (`#column-one`, `#p-navigation`) overlaps `#p-lang`, intercepting pointer events.
 - Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
-- In the suite: Marked with `test.fail( true, 'KI-5: MonoBook sidebar navigation overlaps language trigger on mobile viewports' )` in `tests/open.spec.js`.
+- In the suite: `tests/support/known-issues.js` marks trigger-based feature groups on MonoBook mobile rows as expected failures.

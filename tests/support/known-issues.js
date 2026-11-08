@@ -19,7 +19,7 @@ const ISSUES = [
 		devices: null, // all
 		users: null, // all
 		// Feature groups whose tests start from the language button.
-		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen' ]
+		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen', 'viewport' ]
 	},
 	{
 		id: 'KI-4',
@@ -27,7 +27,15 @@ const ISSUES = [
 		skins: [ 'timeless' ],
 		devices: [ 'tablet', 'mobile' ],
 		users: null, // all
-		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen' ]
+		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen', 'viewport' ]
+	},
+	{
+		id: 'KI-5',
+		title: 'MonoBook sidebar navigation overlaps language trigger on mobile viewports',
+		skins: [ 'monobook' ],
+		devices: [ 'mobile' ],
+		users: null, // all
+		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen', 'viewport' ]
 	}
 ];
 
