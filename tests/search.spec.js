@@ -97,110 +97,56 @@ function getLanguageResult( dialog, code ) {
 	return dialog.locator( selectors.join( ', ' ) ).first();
 }
 
+// One test per matrix row: the page loads and the selector opens once, then each
+// query runs as its own step with soft assertions, so every failing query is still
+// listed in the report. Eight separate tests spent ~2200 s of a 20 min full run
+// reloading the same page.
+// Each step's `absent` is the code the previous step left on screen, and it is
+// checked first: the step waits until the debounced search has replaced the old
+// list, so a stale list can't make the step pass.
+const QUERIES = [
+	{ step: 'English name "German"', query: 'German', code: 'de', text: /Deutsch|German/, absent: 'ja' },
+	// Japanese (ja) is in the QA page langlinks; its autonym is 日本語.
+	{ step: 'non-Latin script "日本語"', query: '日本語', code: 'ja', text: /日本語|Japanese/, absent: 'de' },
+	{ step: 'autonym "Deutsch"', query: 'Deutsch', code: 'de', text: /Deutsch|German/, absent: 'ja' },
+	{ step: 'language code "zh-yue"', query: 'zh-yue', code: 'zh-yue', text: /粵語|Cantonese/, absent: 'de' },
+	{ step: 'language code "de"', query: 'de', code: 'de', text: /Deutsch|German/, absent: 'zh-yue' },
+	{ step: 'language code "be-x-old"', query: 'be-x-old', code: 'be-x-old', text: /тарашкевіца|be-tarask/, absent: 'de' },
+	{ step: 'typo "Germn"', query: 'Germn', code: 'de', text: /Deutsch|German/, absent: 'be-x-old' }
+];
+
 test.describe( 'Language search functionality @search', () => {
 
 	test.beforeEach( async ( { uls } ) => {
 		markKnownIssues( test, uls, 'search' );
 	} );
 
-	test( 'Search by English name displays target language @search', async ( { page, gotoWiki, uls } ) => {
+	test( 'Search by name, autonym, code, typo and script, and the no-results state @search', async ( { page, gotoWiki, uls } ) => {
 		await gotoWiki( 'QA ULS search codes' );
 		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
 
-		await searchInput.fill( 'German' );
-		const germanItem = getLanguageResult( dialog, 'de' );
-		await expect( germanItem, 'German language item displayed in search results' ).toBeVisible();
-		await expect( germanItem ).toContainText( /Deutsch|German/ );
-		const nonMatching = getLanguageResult( dialog, 'ja' );
-		await expect( nonMatching, 'Non-matching language ja is hidden in filtered results' ).toBeHidden();
-	} );
+		for ( const q of QUERIES ) {
+			await test.step( `Search by ${ q.step }`, async () => {
+				await searchInput.fill( q.query );
+				await expect.soft( getLanguageResult( dialog, q.absent ),
+					`Previous result ${ q.absent } is gone for "${ q.query }"` ).toBeHidden();
+				const item = getLanguageResult( dialog, q.code );
+				await expect.soft( item, `"${ q.query }" shows ${ q.code } in the results` ).toBeVisible();
+				await expect.soft( item ).toContainText( q.text );
+			} );
+		}
 
-	test( 'Search by autonym displays target language @search', async ( { page, gotoWiki, uls } ) => {
-		await gotoWiki( 'QA ULS search codes' );
-		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
-
-		await searchInput.fill( 'Deutsch' );
-		const germanItem = getLanguageResult( dialog, 'de' );
-		await expect( germanItem, 'Autonym Deutsch displayed in search results' ).toBeVisible();
-		await expect( germanItem ).toContainText( /Deutsch|German/ );
-		const nonMatching = getLanguageResult( dialog, 'ja' );
-		await expect( nonMatching, 'Non-matching language ja is hidden in filtered results' ).toBeHidden();
-	} );
-
-	test( 'Search by language code "de" displays Deutsch @search', async ( { page, gotoWiki, uls } ) => {
-		await gotoWiki( 'QA ULS search codes' );
-		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
-
-		await searchInput.fill( 'de' );
-		const deItem = getLanguageResult( dialog, 'de' );
-		await expect( deItem, 'de language code matches Deutsch' ).toBeVisible();
-		await expect( deItem ).toContainText( /Deutsch|German/ );
-		const nonMatching = getLanguageResult( dialog, 'ja' );
-		await expect( nonMatching, 'Non-matching language ja is hidden in filtered results' ).toBeHidden();
-	} );
-
-	test( 'Search by language code "zh-yue" displays Cantonese @search', async ( { page, gotoWiki, uls } ) => {
-		await gotoWiki( 'QA ULS search codes' );
-		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
-
-		await searchInput.fill( 'zh-yue' );
-		const yueItem = getLanguageResult( dialog, 'zh-yue' );
-		await expect( yueItem, 'zh-yue language code matches Cantonese' ).toBeVisible();
-		await expect( yueItem ).toContainText( /粵語|Cantonese/ );
-		const nonMatching = getLanguageResult( dialog, 'de' );
-		await expect( nonMatching, 'Non-matching language de is hidden in filtered results' ).toBeHidden();
-	} );
-
-	test( 'Search by language code "be-x-old" displays Belarusian @search', async ( { page, gotoWiki, uls } ) => {
-		await gotoWiki( 'QA ULS search codes' );
-		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
-
-		await searchInput.fill( 'be-x-old' );
-		const beItem = getLanguageResult( dialog, 'be-x-old' );
-		await expect( beItem, 'be-x-old language code matches be-tarask' ).toBeVisible();
-		await expect( beItem ).toContainText( /тарашкевіца|be-tarask/ );
-		const nonMatching = getLanguageResult( dialog, 'de' );
-		await expect( nonMatching, 'Non-matching language de is hidden in filtered results' ).toBeHidden();
-	} );
-
-	test( 'Search with typo or prefix tolerance displays matches @search', async ( { page, gotoWiki, uls } ) => {
-		await gotoWiki( 'QA ULS search codes' );
-		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
-
-		await searchInput.fill( 'Germn' );
-		const germanItem = getLanguageResult( dialog, 'de' );
-		await expect( germanItem, 'Typo query "Germn" successfully matches German' ).toBeVisible();
-		await expect( germanItem ).toContainText( /Deutsch|German/ );
-		const nonMatching = getLanguageResult( dialog, 'ja' );
-		await expect( nonMatching, 'Non-matching language ja is hidden in filtered results' ).toBeHidden();
-	} );
-
-	test( 'Search in non-Latin script displays matching language @search', async ( { page, gotoWiki, uls } ) => {
-		await gotoWiki( 'QA ULS search codes' );
-		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
-
-		// Japanese (ja) is present on QA page langlinks; autonym is 日本語
-		await searchInput.fill( '日本語' );
-		const jaItem = getLanguageResult( dialog, 'ja' );
-		await expect( jaItem, 'Non-Latin query "日本語" matches Japanese' ).toBeVisible();
-		await expect( jaItem ).toContainText( /日本語|Japanese/ );
-		const nonMatching = getLanguageResult( dialog, 'de' );
-		await expect( nonMatching, 'Non-matching language de is hidden in filtered results' ).toBeHidden();
-	} );
-
-	test( 'Search with non-matching query displays empty state @search', async ( { page, gotoWiki, uls } ) => {
-		await gotoWiki( 'QA ULS search codes' );
-		const { dialog, searchInput } = await openSelectorAndGetSearch( page, uls.skin );
-
-		await searchInput.fill( 'xyznonexistentlang999' );
-		const emptyState = dialog.locator( [
-			'.uls-rewrite__no-results',
-			'.uls-no-results-view',
-			'.uls-no-results',
-			'.uls-no-results-found',
-			'.cdx-menu__no-results'
-		].join( ', ' ) ).first();
-		await expect( emptyState, 'Empty search results state is displayed' ).toBeVisible();
+		await test.step( 'Search with a non-matching query shows the empty state', async () => {
+			await searchInput.fill( 'xyznonexistentlang999' );
+			const emptyState = dialog.locator( [
+				'.uls-rewrite__no-results',
+				'.uls-no-results-view',
+				'.uls-no-results',
+				'.uls-no-results-found',
+				'.cdx-menu__no-results'
+			].join( ', ' ) ).first();
+			await expect.soft( emptyState, 'Empty search results state is displayed' ).toBeVisible();
+		} );
 	} );
 
 } );

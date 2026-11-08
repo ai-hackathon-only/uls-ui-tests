@@ -53,11 +53,7 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
   - In other scripts: e.g. Cyrillic, Arabic, Hanzi.
   - Empty state: entering a non-existent language query displays `EmptySearchEntrypoint.vue` / "no results found" state (`.uls-rewrite__no-results` or `.uls-no-results-found`).
 - **Covering spec:** `tests/search.spec.js`
-  - `Search by English name @search`
-  - `Search by autonym @search`
-  - `Search by language code @search`
-  - `Search with typo tolerance @search`
-  - `Search no results empty state @search`
+  - `Search by name, autonym, code, typo and script, and the no-results state @search` (one test per matrix row; one step per query: English name, autonym, codes `de`/`zh-yue`/`be-x-old`, typo, non-Latin script, no results)
 
 ---
 
