@@ -50,6 +50,8 @@ Not a ULS bug. The test wiki has no `/favicon.ico` (404), and Chrome logs
    `evaluate_script` after 2.5 s): desktop 1280×800 anon gives
    `{"skin":"cologneblue","v2":true,"entry":"registered","compact":"ready","plang":false,"portlet":false,"langlinks":true,"triggers":0,"links":24}`.
    Tablet 820×1180 and mobile 390×844 (touch), anon and logged in as `UlsSeat1w1`: `"entry":"registered","triggers":0`.
+   Desktop logged in (12:10): `{"w":1200,"user":"UlsSeat1w1","skin":"cologneblue","v2":true,"entry":"registered","langlinks":true,"portlet":false,"triggers":0}`;
+   mobile logged in: same with `"w":1120`. Triggers = `.mw-interlanguage-selector, .uls-rewrite-trigger, [data-uls-rewrite-trigger]`.
 4. Whose code: the skin's markup and ULS's lookup together. The WIP patch lists Cologne Blue in
    `$wgULSLanguageSelectorV2SupportedSkins`, but the lookup is older than the patch (see 5).
 5. Old selector: with `qa_t439851=old` (`"v2":false`), desktop anon gives `"triggers":0` too, and
@@ -64,11 +66,11 @@ check, then a click on the button:
 | Row (viewport, user, selector) | Before | With fix |
 |---|---|---|
 | desktop 1280×800, anon, new | 0 triggers | 1 (`5 more`, box 1121,49 71×32), opens `div.uls-rewrite` |
-| desktop 1280×800, logged in, new | not rerun | 1 (box 1201,49 71×32), opens `div.uls-rewrite` |
+| desktop 1280×800, logged in, new | 0 | 1 (box 1201,49 71×32), opens `div.uls-rewrite` |
 | tablet 820×1180 touch, anon, new | 0 | 1 (box 1041,49 71×32), opens `div.uls-rewrite` |
 | tablet 820×1180 touch, logged in, new | 0 | 1 (box 1041,49 71×32), opens `div.uls-rewrite` |
 | mobile 390×844 touch, anon, new | 0 | 1 (box 1041,49 71×32), opens `div.uls-rewrite` |
-| mobile 390×844 touch, logged in, new | not rerun | 1, opens `div.uls-rewrite`, cog button present |
+| mobile 390×844 touch, logged in, new | 0 | 1, opens `div.uls-rewrite`, cog button present |
 | desktop 1280×800, anon, old (`qa_t439851=old`) | 0 | 1 (`5 more`), opens `.uls-menu.interlanguage-uls-menu` |
 
 Cologne Blue has no mobile viewport tag, so the page lays out at 1120 px on tablet and mobile
