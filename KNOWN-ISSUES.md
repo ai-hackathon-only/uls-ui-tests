@@ -157,6 +157,7 @@ Checked with `git apply --check` on a copy of the two files. Applied live by add
 | desktop 1280×800, anon, new | input `ltr`, dialog `rtl` | input `rtl` |
 | desktop 1280×800, logged in, new | input `ltr`, dialog `rtl` | input `rtl` |
 | desktop 1280×800, anon, old (`qa_t439715=old`) | input `ltr`, menu `rtl` | input `rtl` |
+| desktop 1280×800, anon, new; cog → Input tab → more languages (jquery.uls menu, two `.uls-filterinput`) | both inputs `ltr`, menu `rtl` | both `rtl` |
 
 Tablet and mobile not checked (the button is hidden there by KI-4). A skin-side fix (scope the
 `shared.css` rule to content) was not tested live. The expected-failure marks stay: the wiki code has not changed.
