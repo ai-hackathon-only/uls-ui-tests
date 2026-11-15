@@ -1,3 +1,17 @@
+# Done (round 4): evidence per GOALS.md line
+
+Filled in by seat 1. Wiki code: ULS `2b186dc0`, core `f7d0709` (Special:Version). Live proof was run with the Chrome DevTools MCP; each PR has the URL, the call and the copied output.
+
+| GOALS.md line (round 4) | Where | Evidence |
+|---|---|---|
+| Still there? | #78, #81, #82, #83 | KI-1, KI-4, KI-5 and KI-6 all reproduce on the commits above; expected-failure marks kept |
+| Root cause, proved | `KNOWN-ISSUES.md` (#78, #81, #82, #83, #85) | each entry has the cause, file:line, MCP proof, whose code, and the old-selector check (all four: old selector too) |
+| Smallest fix, shown working | `docs/fixes/KI-1.diff`, `KI-4.diff`, `KI-5.diff`, `KI-6.diff` | live fix in the page per row: KI-1 all 6 rows, KI-4 all 4 rows (#83, #85), KI-5 mobile anon and logged in (#80, #82), KI-6 desktop anon new/old and logged in new; rows not checked are named in `docs/root-causes.md` |
+| Owner summary | #84 | `docs/root-causes.md`: one table plus a Remarkup draft per KI |
+| Tests stay honest | no test changed | no root cause showed a test checking the wrong thing; no assertion changed |
+| Was the MCP worth it? | Discussion `Retro — round 4` | one paragraph per seat |
+| Sign-off and retro | Discussions `Check-in — round 4` (#86), `Retro — round 4` | one reply per seat |
+
 # Done (round 3): evidence per GOALS.md line
 
 Filled in by seat 1 from the proof runs. Wiki: http://en.mediawiki-agents.mwdd.localhost:8081. Machine: MacBook Pro, Apple M2 Max, 64 GB.
