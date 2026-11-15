@@ -108,3 +108,17 @@ Rows that did not change, and why:
 The warning: "dirty" is the `COVERAGE.md` that every run rewrites, as in proof 1. The compare folder `compare/nochange-b-vs-cookies-old/` has `index.html` (before/after screenshots for the 18 rows), `summary.md` and `phab-draft.txt`.
 
 Run time: 880 s with `ULS_SHOTS=1` and 120 failures (failed tests wait for timeouts), still under 15 minutes.
+
+## Stretch 2: full run at the end (round 4)
+
+Seat 1 ran the full matrix on `main` at 8127136 (after #93 added `@v2`), alone under the `matrix` lock:
+`ULS_RUN=r4-final-1430 npm test` with `wiki-seat1.env`, log `matrix-seat1-1430.log` in the run folder. Run time 798 s (MacBook Pro M2 Max). ULS 2b186dc0, core f7d0709e, no QA cookies.
+
+Result: 1080 tests: 609 pass, 208 xfail (KI-1, KI-4, KI-5, KI-6, KI-7), 262 n/a, **1 FAIL**, exit 1.
+`@v2` passed on every row except the known-issue rows (Cologne Blue all, Timeless tablet/mobile, MonoBook mobile: xfail). `FEATURES.md` §13 table updated from this run.
+
+The FAIL: `minerva-tablet-user` `@prefs`: after saving the language field as `de`, the next page was still `en` (`{config: 'en', html: 'en'}`). Reruns alone, not folded into the count above:
+- `ULS_SKIN=minerva ULS_USER=user npm test -- --grep @prefs`, three times: 2 passed each time (8-9 s).
+- `ULS_SKIN=minerva,vector-2022,timeless ULS_USER=user npm test -- --grep @prefs --repeat-each=4`: 32 passed, 73 s.
+
+So this is a flaky row under full-matrix load, cause not found (the failure trace was overwritten by the reruns). It is not marked as a known issue and the assertion is unchanged. Next step for whoever picks it up: check that the save POST returned the success message before reading the page language.
