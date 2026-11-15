@@ -1,0 +1,13 @@
+KI-5 fix. Repo: mediawiki/skins/MonoBook at 154734b.
+Apply from the skin root: git apply KI-5.diff
+
+--- a/resources/mobile.js.less
++++ b/resources/mobile.js.less
+@@ -20,7 +20,6 @@
+ #p-cactions,
+ #p-personal,
+ #p-tb,
+-#p-lang,
+ #sidebar-mobilejs {
+ 	// keep present for screen readers
+ 	&:not( .mobile-menu-active ) {

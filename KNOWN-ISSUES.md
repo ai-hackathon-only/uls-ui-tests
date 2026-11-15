@@ -110,6 +110,29 @@ Allow-listed in `tests/support/known-errors.js`.
 - Screenshot: [docs/ki-5-monobook-mobile-anon.png](docs/ki-5-monobook-mobile-anon.png) (mobile 390 × 844, anon). Measured 09:55: the trigger box is at x = -39, y = 328 (76 × 32, half off-screen), and `document.elementFromPoint` at its centre returns `#p-navigation .pBody`.
 - Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
 - In the suite: `tests/support/known-issues.js` marks trigger-based feature groups on MonoBook mobile rows as expected failures.
+- Still there (round 4, 2026-11-15): yes (`Special:Version`: core `f7d0709`, MonoBook `154734b`, ULS `2b186dc0`). Note: the earlier symptom note ("fixed sidebar overlaps") was stale—`#p-lang` is clipped off-screen by MonoBook's mobile popout CSS, not overlapped by `#p-navigation`.
+
+### Root cause (KI-5)
+1. At viewport widths `<= 550px`, MonoBook hides `#p-lang` using `.mixin-screen-reader-text()` (`clip: rect(1px, 1px, 1px, 1px)`, `1×1` px) until the user taps the mobile globe tab (`#ca-languages a`) to add `.mobile-menu-active`. Because `button.mw-interlanguage-selector` sits inside `#p-lang`, it is clipped and `document.elementFromPoint` at its coordinates hits `HTML`.
+2. Code:
+   - MonoBook `resources/mobile.js.less:19-28`: `#p-lang` is in the popout selector list `#p-cactions, #p-personal, #p-tb, #p-lang, #sidebar-mobilejs` with `&:not( .mobile-menu-active ) { .mixin-screen-reader-text(); }`.
+   - MonoBook `includes/Hooks.php:109-117` and `resources/skin.js:12`: `#ca-languages a` in `#p-cactions-mobile` toggles `.mobile-menu-active` on `#p-lang`.
+3. Live proof (MCP, `…/w/index.php?title=QA_ULS_search_codes&useskin=monobook&useformat=desktop`, 390×844 mobile+touch):
+   - Anon (seat 3, 390×844×2): `#p-lang` has `position:absolute; clip:rect(1px,1px,1px,1px); 1x1 at x=-1,y=343` (no `mobile-menu-active`); `button.mw-interlanguage-selector` box `x=17,y=546, 76x32`; `elementFromPoint` at centre returns `HTML`. After `#ca-languages a.click()`: `#p-lang` gets `mobile-menu-active`, `clip:auto`, box `200x425 at y=32`, trigger at `y=386`, `elementFromPoint` returns the button, and clicking opens `div.uls-rewrite` (`390x844`).
+   - Logged in (`UlsSeat1w1`, seat 1, 390×844×3): `#p-lang` `clip: rect(1px, 1px, 1px, 1px)`, rect `[-1,344,1,1]`; button `[17,546,76,32]`, hit `HTML`. After `#ca-languages a` click: `mobile-menu-active`, `clip: auto`, button `[47,386,76,32]`, hit `BUTTON.mw-interlanguage-selector`, tap opens `div.uls-rewrite` (`[0,0,390,844]`).
+4. Whose code: MonoBook skin (`resources/mobile.js.less`), by design for its mobile popout menu—not ULS and not the WIP patch.
+5. Old selector: with `qa_t439718=old` (`wgULSLanguageSelectorV2Enabled: false`, seat 3, anon), `#p-lang` has the same `clip: rect(1px…)` and `HTML` hit at the trigger centre. The new selector did not bring this in.
+
+### Fix (KI-5)
+[`docs/fixes/KI-5.diff`](docs/fixes/KI-5.diff): removes `#p-lang,` from the `.mixin-screen-reader-text()` popout list in MonoBook `resources/mobile.js.less:23`, leaving `#p-lang` visible in flow on mobile (note: alternatively, tests can tap `#ca-languages a` first to open the popout, since MonoBook hides `#p-lang` behind that tab by design).
+Applied live via MCP CSS injection (`body.skin--responsive #p-lang:not(.mobile-menu-active){position:static!important;clip:auto;width:auto;height:auto;overflow:visible;margin:1em}`, seat 1, 390×844 touch):
+
+| Row (viewport, user, selector) | Before | With fix |
+|---|---|---|
+| mobile 390×844, anon, new | `#p-lang` clipped, hit `HTML` | `clip: auto`, `#p-lang` `[13,357,365,190]`, button `[31,507,76,32]`, hit `BUTTON`, opens `div.uls-rewrite` |
+| mobile 390×844, logged in (`UlsSeat1w1`), new | `#p-lang` clipped, hit `HTML` | `clip: auto`, `#p-lang` `[13,357,365,190]`, button `[31,507,76,32]`, hit `BUTTON`, opens `div.uls-rewrite` |
+
+Expected-failure marks stay: the wiki code has not changed.
 
 ## KI-6
 **Timeless skin stylesheet overrides ULS search input direction to LTR in RTL mode.**
