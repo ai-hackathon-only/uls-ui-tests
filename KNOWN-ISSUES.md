@@ -31,6 +31,52 @@ Not a ULS bug. The test wiki has no `/favicon.ico` (404), and Chrome logs
   MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
 - In the suite: `tests/support/known-issues.js` marks the trigger-based groups (open, search,
   interlanguage, suggested, settings, keyboard, rtl, small-screen) on Cologne Blue rows as expected failures.
+- Still there (round 4, 2026-11-15): yes. `Special:Version` shows ULS `2b186dc0`, core `f7d0709`
+  (17:22, 6 November 2026), Cologne Blue `6d46c5f`: the same code as above.
+
+### Root cause (KI-1)
+1. ULS builds the language button only after it finds the skin's language list by the class
+   `mw-portlet-lang` or the id `p-lang`. Cologne Blue wraps its list in `<div id="langlinks">` with
+   neither, so ULS finds nothing, stops quietly, and never loads the entry point.
+2. Code:
+   - ULS `resources/js/ext.uls.compactlinks.js:356`:
+     `document.querySelector( '.mw-portlet-lang ul, #p-lang ul' )` returns `null`, and `:357-360`
+     returns early ("Not all namespaces will have a list of languages").
+   - Cologne Blue `templates/skin.mustache:9`: `<div id="langlinks">{{#data-portlets.data-languages}}…`
+     (no `mw-portlet-lang` class, no `#p-lang`).
+   - The same lookup is in ULS `ext.uls.interface.js:360` (`$( '#p-lang' )`) and `:1028`
+     (`.mw-portlet-lang, #p-lang`).
+3. Live proof (MCP, seat 1, `…/w/index.php?title=QA_ULS_search_codes&useskin=cologneblue&useformat=desktop`,
+   `evaluate_script` after 2.5 s): desktop 1280×800 anon gives
+   `{"skin":"cologneblue","v2":true,"entry":"registered","compact":"ready","plang":false,"portlet":false,"langlinks":true,"triggers":0,"links":24}`.
+   Tablet 820×1180 and mobile 390×844 (touch), anon and logged in as `UlsSeat1w1`: `"entry":"registered","triggers":0`.
+   Desktop logged in (12:10): `{"w":1200,"user":"UlsSeat1w1","skin":"cologneblue","v2":true,"entry":"registered","langlinks":true,"portlet":false,"triggers":0}`;
+   mobile logged in: same with `"w":1120`. Triggers = `.mw-interlanguage-selector, .uls-rewrite-trigger, [data-uls-rewrite-trigger]`.
+4. Whose code: the skin's markup and ULS's lookup together. The WIP patch lists Cologne Blue in
+   `$wgULSLanguageSelectorV2SupportedSkins`, but the lookup is older than the patch: `git log -S` puts `#p-lang ul` in 2014 (`b8517a2a1`), line 356 last changed 2024-11-06 (`ed2609507`), before the WIP commit `2b186dc0` (2026-11-04) (see 5).
+5. Old selector: with `qa_t439851=old` (`"v2":false`), desktop anon gives `"triggers":0` too, and
+   compact links are `ready` with no button. The new selector did not bring this in.
+
+### Fix (KI-1)
+[`docs/fixes/KI-1.diff`](docs/fixes/KI-1.diff): one line in Cologne Blue `templates/skin.mustache:9`,
+`<div id="langlinks" class="mw-portlet-lang">`. Checked with `git apply --check` on a copy of the skin.
+Applied live with an MCP `initScript` that adds the class to `#langlinks` before ULS runs, then the same
+check, then a click on the button:
+
+| Row (viewport, user, selector) | Before | With fix |
+|---|---|---|
+| desktop 1280×800, anon, new | 0 triggers | 1 (`5 more`, box 1121,49 71×32), opens `div.uls-rewrite` |
+| desktop 1280×800, logged in, new | 0 | 1 (box 1201,49 71×32), opens `div.uls-rewrite` |
+| tablet 820×1180 touch, anon, new | 0 | 1 (box 1041,49 71×32), opens `div.uls-rewrite` |
+| tablet 820×1180 touch, logged in, new | 0 | 1 (box 1041,49 71×32), opens `div.uls-rewrite` |
+| mobile 390×844 touch, anon, new | 0 | 1 (box 1041,49 71×32), opens `div.uls-rewrite` |
+| mobile 390×844 touch, logged in, new | 0 | 1, opens `div.uls-rewrite`, cog button present |
+| desktop 1280×800, anon, old (`qa_t439851=old`) | 0 | 1 (`5 more`), opens `.uls-menu.interlanguage-uls-menu` |
+
+Cologne Blue has no mobile viewport tag, so the page lays out at 1120 px on tablet and mobile
+(`innerWidth` 1120); that is the skin's own behaviour and the fix does not change it. A ULS-side fix
+(add `#langlinks ul` to the lookups above) would also work but was not tested live.
+The expected-failure marks stay: the wiki code has not changed.
 
 ## KI-2
 Not a ULS bug. MediaWiki's EventLogging / WikimediaEvents sends telemetry to
