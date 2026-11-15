@@ -93,7 +93,7 @@ Rounds 1–2 met every line above (final runs: #58 and `docs/final-runs.md`; ret
 1. `npm run compare -- --gerrit <change> <before> <after>`: read the Gerrit REST API (read-only, no login) and name the change and patch set whose commit matches the after run's ULS commit in the draft.
 2. A pixel-difference percentage per changed screenshot pair, with a threshold.
 
-## Owner update: round 4, root causes (12:15–16:15 JST, Sunday 2026-11-15)
+## Owner update: round 4, root causes (11:55–15:55 JST, Sunday 2026-11-15)
 Rounds 1–3 built the suite, and it found real problems: `KNOWN-ISSUES.md` KI-1, KI-4, KI-5 and KI-6. Their symptoms are measured (boxes, computed values, the media query), but no entry names the file and line that cause them, whose code that is, or whether the old selector has the same problem. The owner works on these skins and needs exactly that, plus the smallest fix. Round 4 answers it.
 
 **New tool: the Chrome DevTools MCP.** Claude seats (`browser: yes`) get `mcp__chrome-devtools__*` tools: a real Chrome you drive step by step and inspect between steps (computed styles and which CSS rule wins, element boxes, `elementFromPoint`, console, network, ResourceLoader state, and live JS on the page). Each turn starts a fresh headless Chrome that can reach only the agent wiki. How to use it and what counts as evidence: `SKILLS/browser-check/`, section "Investigating with the Chrome DevTools MCP". Playwright stays the tool for tests and proof.
@@ -118,9 +118,9 @@ Rounds 1–3 built the suite, and it found real problems: `KNOWN-ISSUES.md` KI-1
 - **The challenger tries to break each cause.** Seat 5 checks every root-cause PR: does the fix work on every listed row, is there a second cause, does the cookie check say what the PR claims? Its proof is MCP output too. The 15-minute rule from round 3 stands.
 - **Gemini seats (2 and 4)** have no browser and no MCP. They read source (ULS, skins, core: read-only), find candidate lines, write the fix files and the Phabricator drafts, and review. For a live check they post a `RUN REQUEST` with the page and the question, and a Claude seat answers with the call and its output.
 - **MCP evidence rule:** a claim from the MCP names the URL, the call and the copied output. "The MCP showed it" alone is not evidence. If a call is blocked by the allow-list, that is the guard, not a bug: don't try to get around it.
-- **Blocked by the guard, not a bug.** The MCP's Chrome can't reach en.wikipedia.org, so on every page the ULS page-images request (`https://en.wikipedia.org/w/api.php?…prop=pageimages…`) fails and the console shows `Failed to load resource: net::ERR_INTERNET_DISCONNECTED` and `Uncaught (in promise) http`. Ignore these two in MCP sessions (owner checked 11:50). The new selector opens as `div.uls-rewrite` with a Codex search input (`input.cdx-text-input__input`).
+- **Blocked by the guard, not a bug.** The MCP's Chrome can't reach en.wikipedia.org, so on every page the ULS page-images request (`https://en.wikipedia.org/w/api.php?…prop=pageimages…`) fails and the console shows `Failed to load resource: net::ERR_INTERNET_DISCONNECTED` and `Uncaught (in promise) http`. Ignore these two in MCP sessions (owner checked 11:40). The new selector opens as `div.uls-rewrite` with a Codex search input (`input.cdx-text-input__input`).
 - No full matrix runs are needed for the main goal. If a PR changes a test, run that feature on the affected rows (subset run) and paste the result. Full runs still go through `SKILLS/background-run/` with the `matrix` lock.
-- **Freeze at 15:30.** After it, no new PRs. Finish reviews, sign-offs and retros.
+- **Freeze at 15:10.** After it, no new PRs. Finish reviews, sign-offs and retros.
 - Stay off the wiki's code: no docker, no git or file changes under `mediawiki-agents`, read `LocalSettings.php` only. Agents never edit `GOALS.md`.
 - Write budget: `writes_per_event` stays 300 per seat and counts rounds 1–3.
 
@@ -152,9 +152,9 @@ Rounds 1–3 built the suite, and it found real problems: `KNOWN-ISSUES.md` KI-1
 ai-hackathon:
   repo: ai-hackathon-only/uls-ui-tests
   owner: hueitan            # the human who is responsible
-  start: 2026-11-15T12:15+09:00
-  end:   2026-11-15T16:15+09:00
-  freeze: 2026-11-15T15:30+09:00 # no new PRs after this
+  start: 2026-11-15T11:55+09:00
+  end:   2026-11-15T15:55+09:00
+  freeze: 2026-11-15T15:10+09:00 # no new PRs after this
   mcp: chrome-devtools            # Claude seats with browser: yes get the Chrome DevTools MCP (hk-run)
   mcp_allow: http://*.mediawiki-agents.mwdd.localhost:8081/*   # the MCP's Chrome can reach only these URLs
   round_minutes: 5                # how often each agent wakes up
