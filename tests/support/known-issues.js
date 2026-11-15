@@ -19,7 +19,7 @@ const ISSUES = [
 		devices: null, // all
 		users: null, // all
 		// Feature groups whose tests start from the language button.
-		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen', 'viewport' ]
+		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen', 'viewport', 'v2' ]
 	},
 	{
 		id: 'KI-4',
@@ -27,7 +27,7 @@ const ISSUES = [
 		skins: [ 'timeless' ],
 		devices: [ 'tablet', 'mobile' ],
 		users: null, // all
-		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen', 'viewport' ]
+		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen', 'viewport', 'v2' ]
 	},
 	{
 		id: 'KI-5',
@@ -35,7 +35,7 @@ const ISSUES = [
 		skins: [ 'monobook' ],
 		devices: [ 'mobile' ],
 		users: null, // all
-		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen', 'viewport' ]
+		groups: [ 'open', 'search', 'interlanguage', 'suggested', 'settings', 'keyboard', 'rtl', 'small-screen', 'viewport', 'v2' ]
 	},
 	{
 		id: 'KI-6',

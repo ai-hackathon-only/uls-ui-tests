@@ -170,6 +170,20 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 
 ---
 
+## 13. New Selector (ULS V2) Behaviours (`@v2`)
+
+- **Description:** Behaviours introduced in the Vue/Codex ULS V2 rewrite (`UniversalLanguageSelector.vue`, DOM root `.uls-rewrite`):
+  1. **Typeahead ghost autocomplete:** `.uls-rewrite__search-ghost` displays inline completion when typing a prefix; `ArrowRight` at the end of the query or `Tab` accepts the completion into `.uls-rewrite__search-active input`.
+  2. **Search clear button:** Codex clear icon (`.cdx-text-input__clear-icon`) clears the search query and restores default language sections.
+  3. **Distinct empty states:** Searching a valid-but-unavailable language (`hasSearchHits === true`) shows `ext-uls-unsupported-language-title` / `EmptySearchEntrypoint`, while an unrecognised query (`hasSearchHits === false`) shows `ext-uls-invalid-language-search-title`.
+  4. **Live screen-reader status:** `.uls-rewrite__sr-only[role="status"]` updates with the search result count or no-results announcement.
+  5. **Keyboard list pagination:** `PageDown` and `PageUp` in the search input jump the highlighted language item (`.uls-rewrite__language-item--highlighted`) by page.
+- **Scope:** Applies to all skins running ULS V2 rewrite (`.uls-rewrite`). When legacy ULS (`.uls-menu`) is active via QA cookies, marked `n/a: legacy ULS selector active`.
+- **Covering spec:** `tests/v2-features.spec.js`
+  - `New selector typeahead ghost, clear button, empty states, SR status and pagination @v2`
+
+---
+
 ## Skin Feature Support Matrix
 
 | Feature Group | Vector 2022 | Vector legacy | MonoBook | Timeless | Modern | Cologne Blue | Minerva |
@@ -185,4 +199,5 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 | **@rtl** (Mirroring & 390px) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail; KI-6 desktop fail) | Yes | Expected fail: KI-1 | Yes |
 | **@viewport** (Responsive tap) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes | Expected fail: KI-1 | Yes |
 | **@compact-links** (Compacted) | `n/a: v2022 dropdown` | Yes | Yes | Yes | Yes | Expected fail: KI-1 | `n/a: minerva` |
+| **@v2** (V2 ghost, clear, empty, SR, PageDown) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes | Expected fail: KI-1 | Yes |
 | **@errors** (No 4xx/5xx/console) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
