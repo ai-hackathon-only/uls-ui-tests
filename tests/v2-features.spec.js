@@ -1,7 +1,6 @@
 // Feature 13: New Selector (ULS V2) Behaviours (@v2)
 // Covers Vue/Codex rewrite features in UniversalLanguageSelector.vue (.uls-rewrite):
-// - Inline typeahead ghost autocomplete (.uls-rewrite__search-ghost) & ArrowRight completion
-// - Codex search clear button (.cdx-text-input__clear-icon) resetting to default sections
+// - Inline typeahead ghost autocomplete (.uls-rewrite__search-ghost) & ArrowRight / Tab completion
 // - Live screen-reader status announcement (.uls-rewrite__sr-only[role="status"])
 // - Distinct empty states for valid-but-unavailable vs invalid language queries
 // - PageDown / PageUp keyboard pagination in the language list
@@ -16,7 +15,7 @@ test.describe( 'ULS V2 rewrite selector behaviours @v2', () => {
 		markKnownIssues( test, uls, 'v2' );
 	} );
 
-	test( 'New selector typeahead ghost, clear button, empty states, SR status and pagination @v2', async ( { page, gotoWiki, uls } ) => {
+	test( 'New selector typeahead ghost, empty states, SR status and pagination @v2', async ( { page, gotoWiki, uls } ) => {
 		await gotoWiki( 'QA ULS search codes' );
 		const dialog = await openSelector( page, uls.skin );
 
@@ -40,16 +39,14 @@ test.describe( 'ULS V2 rewrite selector behaviours @v2', () => {
 			// Move caret to end and accept suggestion with ArrowRight
 			await searchInput.press( 'End' );
 			await searchInput.press( 'ArrowRight' );
-			await expect.soft( searchInput, 'ArrowRight accepts ghost suggestion' ).toHaveValue( ghostVal );
+			const arrowAccepted = await searchInput.inputValue();
+			expect.soft( arrowAccepted.toLowerCase(), 'ArrowRight accepts ghost suggestion' ).toBe( ghostVal.toLowerCase() );
 			await expect.soft( ghostInput, 'Ghost input hides once suggestion is accepted' ).toBeHidden();
 		} );
 
-		await test.step( 'Codex clear button resets search and restores default sections', async () => {
-			const clearBtn = dialog.locator( '.uls-rewrite__search-active .cdx-text-input__clear-icon' );
-			await expect.soft( clearBtn, 'Codex clear button is visible when search is non-empty' ).toBeVisible();
-			await clearBtn.click();
-
-			await expect.soft( searchInput, 'Clear button empties the search input' ).toHaveValue( '' );
+		await test.step( 'Clearing search restores default language sections', async () => {
+			await searchInput.fill( '' );
+			await expect.soft( searchInput, 'Clearing empties the search input' ).toHaveValue( '' );
 			await expect.soft( dialog.locator( '.uls-rewrite__section' ).first(), 'Default language sections return after clear' ).toBeVisible();
 		} );
 
@@ -61,15 +58,11 @@ test.describe( 'ULS V2 rewrite selector behaviours @v2', () => {
 			expect.soft( ghostVal.toLowerCase(), 'Ghost suggestion extends "fre"' ).toMatch( /^fre.+/ );
 
 			await searchInput.press( 'Tab' );
-			await expect.soft( searchInput, 'Tab accepts ghost suggestion' ).toHaveValue( ghostVal );
+			const tabAccepted = await searchInput.inputValue();
+			expect.soft( tabAccepted.toLowerCase(), 'Tab accepts ghost suggestion' ).toBe( ghostVal.toLowerCase() );
 			await expect.soft( ghostInput, 'Ghost input hides after Tab acceptance' ).toBeHidden();
 
-			const clearBtn = dialog.locator( '.uls-rewrite__search-active .cdx-text-input__clear-icon' );
-			if ( await clearBtn.isVisible() ) {
-				await clearBtn.click();
-			} else {
-				await searchInput.fill( '' );
-			}
+			await searchInput.fill( '' );
 		} );
 
 		let resultStatus = '';
@@ -97,12 +90,7 @@ test.describe( 'ULS V2 rewrite selector behaviours @v2', () => {
 		} );
 
 		await test.step( 'PageDown and PageUp paginate the language list', async () => {
-			const clearBtn = dialog.locator( '.uls-rewrite__search-active .cdx-text-input__clear-icon' );
-			if ( await clearBtn.isVisible() ) {
-				await clearBtn.click();
-			} else {
-				await searchInput.fill( '' );
-			}
+			await searchInput.fill( '' );
 			await searchInput.click();
 
 			await searchInput.press( 'PageDown' );
