@@ -44,7 +44,7 @@ Not a ULS bug. The test wiki has no `/favicon.ico` (404), and Chrome logs
      returns early ("Not all namespaces will have a list of languages").
    - Cologne Blue `templates/skin.mustache:9`: `<div id="langlinks">{{#data-portlets.data-languages}}…`
      (no `mw-portlet-lang` class, no `#p-lang`).
-   - The same lookup is in ULS `ext.uls.interface.js:360` (`$( '#p-lang' )`) and `:1026`
+   - The same lookup is in ULS `ext.uls.interface.js:360` (`$( '#p-lang' )`) and `:1028`
      (`.mw-portlet-lang, #p-lang`).
 3. Live proof (MCP, seat 1, `…/w/index.php?title=QA_ULS_search_codes&useskin=cologneblue&useformat=desktop`,
    `evaluate_script` after 2.5 s): desktop 1280×800 anon gives
@@ -53,7 +53,7 @@ Not a ULS bug. The test wiki has no `/favicon.ico` (404), and Chrome logs
    Desktop logged in (12:10): `{"w":1200,"user":"UlsSeat1w1","skin":"cologneblue","v2":true,"entry":"registered","langlinks":true,"portlet":false,"triggers":0}`;
    mobile logged in: same with `"w":1120`. Triggers = `.mw-interlanguage-selector, .uls-rewrite-trigger, [data-uls-rewrite-trigger]`.
 4. Whose code: the skin's markup and ULS's lookup together. The WIP patch lists Cologne Blue in
-   `$wgULSLanguageSelectorV2SupportedSkins`, but the lookup is older than the patch (see 5).
+   `$wgULSLanguageSelectorV2SupportedSkins`, but the lookup is older than the patch: `git log -S` puts `#p-lang ul` in 2014 (`b8517a2a1`), line 356 last changed 2024-11-06 (`ed2609507`), before the WIP commit `2b186dc0` (2026-11-04) (see 5).
 5. Old selector: with `qa_t439851=old` (`"v2":false`), desktop anon gives `"triggers":0` too, and
    compact links are `ready` with no button. The new selector did not bring this in.
 
