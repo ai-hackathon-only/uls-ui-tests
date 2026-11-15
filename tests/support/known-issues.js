@@ -44,6 +44,14 @@ const ISSUES = [
 		devices: [ 'desktop' ],
 		users: null, // all
 		groups: [ 'rtl' ]
+	},
+	{
+		id: 'KI-7',
+		title: 'New selector does not move focus into the full-screen dialog under 768px',
+		skins: [ 'minerva', 'timeless', 'monobook' ],
+		devices: [ 'mobile' ],
+		users: null, // all
+		groups: [ 'focus-on-open' ]
 	}
 ];
 

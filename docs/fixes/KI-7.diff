@@ -1,0 +1,13 @@
+--- a/resources/ext.uls.rewrite/UniversalLanguageSelector.vue	2026-11-15 14:17:58
++++ b/resources/ext.uls.rewrite/UniversalLanguageSelector.vue	2026-11-15 14:17:58
+@@ -936,7 +936,9 @@
+ 			// Without this, the popup is still at its initial { top: 0, left: 0 }
+ 			// when .focus() runs on first open, and the browser scrolls the
+ 			// viewport to the top of the document to reveal it. T426954.
+-			if ( !isPositioned.value ) {
++			// On mobile there is no floating reference, so isPositioned never
++			// turns true; waiting for it would leave focus outside the modal.
++			if ( !isMobile.value && !isPositioned.value ) {
+ 				await new Promise( ( resolve ) => {
+ 					watch( isPositioned, () => resolve(), { once: true } );
+ 				} );
