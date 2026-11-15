@@ -16,7 +16,7 @@ Raw posts with the copied output: issue #90 (seat 1, seat 4 source checks) and D
 | device | trigger | click→visible | long tasks | RL added | dialog | search box name | focus after open |
 |---|---|---|---|---|---|---|---|
 | desktop | `#p-lang-btn-checkbox` | 288 ms | none | 19 | role=dialog, aria-label "Languages", aria-modal=false | placeholder only | search input |
-| mobile 390 (`innerWidth` 1120, no responsive viewport) | same | 178 ms | none | 17 | same, box 402×314 | placeholder only | search input |
+| mobile UA, 390 emulated, desktop-width layout (`innerWidth` 1120) | same | 178 ms | none | 17 | same, box 402×314 | placeholder only | search input |
 
 Shift+Tab from the search input moves focus out of the dialog (to `a.cdx-button`) and the dialog stays open. The dialog is `aria-modal=false` on desktop, so this matches the code (`UniversalLanguageSelector.vue:6-8`, trap only when `isMobile`, `:888`).
 
@@ -25,7 +25,7 @@ Shift+Tab from the search input moves focus out of the dialog (to `a.cdx-button`
 | device | trigger | click→visible | long tasks | RL added | dialog | search box name | focus after open |
 |---|---|---|---|---|---|---|---|
 | desktop | `.mw-interlanguage-selector` | 190 ms | none | 15 | role=dialog, "Languages", aria-modal=false | placeholder only | search input |
-| mobile 390 (`innerWidth` 1120) | same | 159 ms | none | 15 | same | placeholder only | search input |
+| mobile UA, 390 emulated, desktop-width layout (`innerWidth` 1120) | same | 159 ms | none | 15 | same | placeholder only | search input |
 
 ## MonoBook, Timeless, Modern
 
@@ -36,7 +36,7 @@ Shift+Tab from the search input moves focus out of the dialog (to `a.cdx-button`
 | modern | desktop | 135 ms | none | 15 | same | placeholder only | search input |
 | timeless | mobile 390 (`innerWidth` 390; tap `#ca-languages`, then `button.mw-interlanguage-selector` in its menu) | 173 ms (second tap) | none | 14 | role=dialog, "Languages", **aria-modal=true**, 390×844 | placeholder only | **BODY** (outside the dialog) |
 | monobook | mobile 390 (`innerWidth` 390) | 134 ms | none | 14 | role=dialog, "Languages", **aria-modal=true**, 390×844 | placeholder only | **BODY** (outside the dialog) |
-| modern | mobile 390 (`innerWidth` 1120, no responsive viewport) | 147 ms | none | 14 | role=dialog, "Languages", aria-modal=false, box 402×314 | placeholder only | search input |
+| modern | mobile UA, 390 emulated, desktop-width layout (`innerWidth` 1120) | 147 ms | none | 14 | role=dialog, "Languages", aria-modal=false, box 402×314 | placeholder only | search input |
 
 Mobile rows run by seat 1 at 13:5x with `test-results/a11y-open.js` (Timeless: `a11y-open-inner.js`, same script with the trigger list set to `button.mw-interlanguage-selector`), same `emulate` settings as Minerva.
 
@@ -64,9 +64,9 @@ The search input passes Lighthouse's `label` audit only through its placeholder.
 
 ## Findings
 
-1. **Mobile layout (Minerva, Timeless, MonoBook at 390 px): focus does not move into the modal dialog.** Every row whose `innerWidth` is under 768 px gets the full-screen dialog with `aria-modal=true`, and after opening, focus stays outside it (BODY or the trigger). Rows that keep a 1120 px layout (Vector 2022, Vector legacy, Modern) open the desktop dialog and focus the search input. Seat 4's source reading: `UniversalLanguageSelector.vue:477-479` sets `floatingReference` to `null` when `isMobile`, so `isPositioned` (`:481`) never turns true and `focusInput()` (`:939-945`) waits forever. Candidate KI; not filed yet.
+1. **Mobile layout (Minerva, Timeless, MonoBook at 390 px): focus does not move into the modal dialog.** Every row whose `innerWidth` is under 768 px gets the full-screen dialog with `aria-modal=true`, and after opening, focus stays outside it (BODY or the trigger). Rows that keep a 1120 px layout (Vector 2022, Vector legacy, Modern) open the desktop dialog and focus the search input. Seat 4's source reading: `UniversalLanguageSelector.vue:477-479` sets `floatingReference` to `null` when `isMobile`, so `isPositioned` (`:481`) never turns true and `focusInput()` (`:939-945`) waits forever. Not checked: the old selector (QA cookie `old`) and a second open/close. Candidate KI; not filed yet.
 2. **Heading order** (all skins, seen by Lighthouse on Minerva): the dialog's section titles are `h3` (`:106`) with no `h2` above them in the dialog. Minor.
 3. **Search box has no label**, only a placeholder (`:38-56`), on every skin. Screen readers read the placeholder; it disappears once you type. Minor.
-4. **Performance:** opening takes 100–290 ms (desktop and mobile) on this machine (MacBook Pro M2 Max), with no long tasks on any row measured.
+4. **Performance:** opening takes 100–290 ms (desktop and mobile) on this machine (MacBook Pro M2 Max), with no long tasks observed (1 sample per row; the observer starts at the click, so it can miss work before it). The 1120-px rows are desktop layouts with a mobile user agent, not 390 px results.
 
 Written by seat 1 (builder), with rows and source checks from seats 3 and 4.
