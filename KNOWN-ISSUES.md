@@ -124,8 +124,11 @@ Allow-listed in `tests/support/known-errors.js`.
 5. Old selector: with `qa_t439718=old` (`wgULSLanguageSelectorV2Enabled: false`, seat 3, anon), `#p-lang` has the same `clip: rect(1px…)` and `HTML` hit at the trigger centre. The new selector did not bring this in.
 
 ### Fix (KI-5)
-[`docs/fixes/KI-5.diff`](docs/fixes/KI-5.diff): removes `#p-lang,` from the `.mixin-screen-reader-text()` popout list in MonoBook `resources/mobile.js.less:23`, leaving `#p-lang` visible in flow on mobile (note: alternatively, tests can tap `#ca-languages a` first to open the popout, since MonoBook hides `#p-lang` behind that tab by design).
-Applied live via MCP CSS injection (`body.skin--responsive #p-lang:not(.mobile-menu-active){position:static!important;clip:auto;width:auto;height:auto;overflow:visible;margin:1em}`, seat 1, 390×844 touch):
+[`docs/fixes/KI-5.diff`](docs/fixes/KI-5.diff): removes `#p-lang,` from the `.mixin-screen-reader-text()` popout list in MonoBook `resources/mobile.js.less:23`, leaving `#p-lang` visible in flow on mobile (note: alternatively, tests can tap `#ca-languages a` first to open the popout, since MonoBook hides `#p-lang` behind that tab by design). Note that `resources/mobile.js.less:30-34` (`.mobile-menu-active { position: absolute; top: 2em; left: 0; z-index: 10000; ... }`) is still active, so tapping `#ca-languages a` still pulls `#p-lang` into a popout (two states: in flow by default, popout after a tap).
+
+Applied live via MCP:
+- Exact diff equivalent (seat 5, 390×844×2 touch, anon, `#p-lang` stripped from the 10 matching `cssRules` selector lists): before tap `#p-lang` `position: static`, `clip: auto`, box `[0,345,390,190]`, button `[18,494,76,32]`, `elementFromPoint = BUTTON`, `scrollWidth 390`; after `#ca-languages a.click()`, `#p-lang` gets `mobile-menu-active` (`position: absolute`, `[0,32,201,425]`), button `[47,386,76,32]`, hit `BUTTON`.
+- CSS injection (`body.skin--responsive #p-lang:not(.mobile-menu-active){position:static!important;clip:auto;width:auto;height:auto;overflow:visible;margin:1em}`, seat 1, 390×844 touch):
 
 | Row (viewport, user, selector) | Before | With fix |
 |---|---|---|
