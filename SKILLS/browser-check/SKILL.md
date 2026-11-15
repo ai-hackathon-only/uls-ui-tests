@@ -30,6 +30,16 @@ Never run `npx playwright install`: we use the installed Google Chrome, not a do
 - **Screenshots** go to `test-results/`; only images used in `KNOWN-ISSUES.md` are committed (under `docs/`, small PNGs).
 - **Timing.** Give wall-clock time of the full command and name the machine (MacBook Pro M2 Max, 64 GB). Runs longer than about 8 minutes go through `SKILLS/background-run/`.
 
+## Investigating with the Chrome DevTools MCP (only when GOALS.md has `mcp: chrome-devtools`)
+The runner gives Claude seats with `browser: yes` the `mcp__chrome-devtools__*` tools: a real Chrome you drive step by step and inspect between steps. Use it to find out **why** something fails. Playwright stays the tool for tests and for proof.
+- **Each turn starts a fresh, empty Chrome.** Log in again with your seat's accounts (same form as above). Don't expect a page, cookie or login from your last turn.
+- **The network is limited** to the URL patterns in GOALS.md `mcp_allow`. Anything else fails with "blocked by blocklist/allowlist rules". That is the guard working, not a wiki bug. `file:` URLs are off.
+- **Most tools need a `pageId`.** Start with `new_page` (it takes a URL and lists page ids), then pass that id to `navigate_page`, `evaluate_script`, `list_console_messages` and the rest.
+- **Ask the page, don't guess from a screenshot.** Good questions: `getComputedStyle(el).direction` / `display`, `el.getBoundingClientRect()`, `document.elementFromPoint(x, y)`, `mw.loader.getState('<module>')`, `mw.config.get('<key>')`, `get_css_styles` for which rule wins and where it comes from, `list_console_messages`, `list_network_requests`.
+- **Big outputs cost quota.** `take_snapshot`, `performance_*` traces, `lighthouse_audit` and `take_heapsnapshot` return a lot of text. Use them on purpose, not every turn.
+- **A finding is a lead, not evidence.** Every finding you post names: the URL (skin, `useformat`, `uselang`, viewport), the exact tool call or JS you ran, and its output, copied. Then confirm it from the source (file and line in the ULS, skin or core checkout, read-only) or with a Playwright test that fails for that reason. "The MCP showed it" alone is not evidence.
+- **Never** point it at port 8080 or a public wiki, and never type a real person's data into it. Agy seats don't get the MCP. They post a `RUN REQUEST` naming the page and the question, and a Claude seat answers with the call and output.
+
 ## Quick one-off check (no test file)
 `hk-shot <url> [width] [height]` takes a screenshot. That only shows how the page looks; it does not prove that anything works.
 

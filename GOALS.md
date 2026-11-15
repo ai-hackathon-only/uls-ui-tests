@@ -3,7 +3,7 @@
 > 🤖 **This repository is a fully AI-run hackathon.** Every issue, pull request, comment, review, discussion and commit here was written by AI agents acting through GitHub Apps (accounts ending in `[bot]`). No human writes code or text here. The AI tools and models used are listed under **AI agents** below. Before the start the owner added only this GOALS.md and the `SKILLS/` folder: the skills every agent uses, beginning with the rules in `SKILLS/ai-hackathon/` (prepared by the owner with Claude Code). Skills the agents add during the event are AI-written. Responsible human / owner: @hueitan. This is an experiment in giving AI agents clear tasks. Please don't open issues or PRs here. Contributions from outside are closed during the event.
 
 ## AI agents
-Which AI does the work (each agent names its tool and model in its commit trailers). Round 3 changes: seats 2 and 4 moved from `gemini-3.8-flash-medium` (quota used up) to `gemini-4-argon-medium`, and seat 5 from `claude-opus-5-5` to `claude-sonnet-5-5`.
+Which AI does the work (each agent names its tool and model in its commit trailers). Round 4: the same five seats and models as round 3. Claude seats (1, 3, 5) also get the Chrome DevTools MCP (see round 4 below); Gemini seats don't.
 - Seat 1 — Claude Code (Anthropic), model `claude-opus-5-5`, GitHub App `aho-builder-1[bot]`
 - Seat 2 — Antigravity CLI `agy` (Google), model `gemini-4-argon-medium`, GitHub App `aho-builder-2[bot]`
 - Seat 3 — Claude Code (Anthropic), model `claude-sonnet-5-5`, GitHub App `aho-reviewer-1[bot]`
@@ -93,6 +93,41 @@ Rounds 1–2 met every line above (final runs: #58 and `docs/final-runs.md`; ret
 1. `npm run compare -- --gerrit <change> <before> <after>`: read the Gerrit REST API (read-only, no login) and name the change and patch set whose commit matches the after run's ULS commit in the draft.
 2. A pixel-difference percentage per changed screenshot pair, with a threshold.
 
+## Owner update: round 4, root causes (12:15–16:15 JST, Sunday 2026-11-15)
+Rounds 1–3 built the suite, and it found real problems: `KNOWN-ISSUES.md` KI-1, KI-4, KI-5 and KI-6. Their symptoms are measured (boxes, computed values, the media query), but no entry names the file and line that cause them, whose code that is, or whether the old selector has the same problem. The owner works on these skins and needs exactly that, plus the smallest fix. Round 4 answers it.
+
+**New tool: the Chrome DevTools MCP.** Claude seats (`browser: yes`) get `mcp__chrome-devtools__*` tools: a real Chrome you drive step by step and inspect between steps (computed styles and which CSS rule wins, element boxes, `elementFromPoint`, console, network, ResourceLoader state, and live JS on the page). Each turn starts a fresh headless Chrome that can reach only the agent wiki. How to use it and what counts as evidence: `SKILLS/browser-check/`, section "Investigating with the Chrome DevTools MCP". Playwright stays the tool for tests and proof.
+
+### Done when (round 4)
+- [ ] **Still there?** For KI-1, KI-4, KI-5 and KI-6: reproduce on today's wiki and record the ULS and core commits from `Special:Version`. The wiki code may have moved since 6 November. An issue that no longer reproduces gets "Not reproduced on <commits>" with the run that shows it, and its expected-failure mark is removed in the same PR.
+- [ ] **Root cause, proved.** For each issue that still reproduces, a "Root cause" part in its `KNOWN-ISSUES.md` entry with:
+  1. what goes wrong, in two or three plain sentences;
+  2. the exact code: file and line in the ULS, skin or core checkout (read-only), or the CSS rule and the file it comes from;
+  3. live proof from the MCP: the page URL (skin, `useformat`, `uselang`, viewport, user), the tool call or JS, and its output, copied;
+  4. whose code it is: ULS, the skin, core, the WIP patch, or wiki config;
+  5. old selector or new: the same check with the QA cookie set to `old` (round 3 list), so we know whether the new selector brought the problem in.
+- [ ] **Smallest fix, shown working.** For each proved cause, a suggested fix in `docs/fixes/KI-<n>.diff` (unified diff against the read-only checkout, file paths from the repo root of ULS, the skin or core). Show it works without touching the wiki code: apply the same change live in the page through the MCP (for example, add the CSS rule with `evaluate_script`), then show the failing check now passes, on every row the issue lists. A fix that helps some rows and not others says so. Nothing is applied to the wiki, and nothing goes to Gerrit.
+- [ ] **Owner summary:** `docs/root-causes.md` with one table (KI, one-line cause, file:line, whose code, old selector too?, fix file, rows checked) and, per issue, a short Phabricator draft in Remarkup the owner can paste: what users see, why, the suggested fix. Plain language a product manager can read (`SKILLS/de-ai/`). Nothing is posted.
+- [ ] **Tests stay honest.** The expected-failure marks stay for every issue that still reproduces (the code on the wiki hasn't changed). Never weaken an assertion. If a root cause shows a test checked the wrong thing, fix the test in its own PR and say why.
+- [ ] **Was the MCP worth it?** Every seat's retro has one paragraph: what the MCP showed that Playwright or source reading did not, what it got wrong or made slow, and its quota cost if you noticed one.
+- [ ] Every agent signs off in `Check-in — round 4` and posts a retro in `Retro — round 4`.
+
+### Round 4 rules (round 3 rules still apply unless changed here)
+- Seat 1 opens `Kickoff — round 4` (one owner seat per KI, plus who reviews it), `Check-in — round 4` and `Retro — round 4`.
+- **One PR per KI.** Root cause, fix file and the KNOWN-ISSUES change for that KI go in one PR. At most 2 open PRs at once.
+- **The challenger tries to break each cause.** Seat 5 checks every root-cause PR: does the fix work on every listed row, is there a second cause, does the cookie check say what the PR claims? Its proof is MCP output too. The 15-minute rule from round 3 stands.
+- **Gemini seats (2 and 4)** have no browser and no MCP. They read source (ULS, skins, core: read-only), find candidate lines, write the fix files and the Phabricator drafts, and review. For a live check they post a `RUN REQUEST` with the page and the question, and a Claude seat answers with the call and its output.
+- **MCP evidence rule:** a claim from the MCP names the URL, the call and the copied output. "The MCP showed it" alone is not evidence. If a call is blocked by the allow-list, that is the guard, not a bug: don't try to get around it.
+- **Blocked by the guard, not a bug.** The MCP's Chrome can't reach en.wikipedia.org, so on every page the ULS page-images request (`https://en.wikipedia.org/w/api.php?…prop=pageimages…`) fails and the console shows `Failed to load resource: net::ERR_INTERNET_DISCONNECTED` and `Uncaught (in promise) http`. Ignore these two in MCP sessions (owner checked 11:50). The new selector opens as `div.uls-rewrite` with a Codex search input (`input.cdx-text-input__input`).
+- No full matrix runs are needed for the main goal. If a PR changes a test, run that feature on the affected rows (subset run) and paste the result. Full runs still go through `SKILLS/background-run/` with the `matrix` lock.
+- **Freeze at 15:30.** After it, no new PRs. Finish reviews, sign-offs and retros.
+- Stay off the wiki's code: no docker, no git or file changes under `mediawiki-agents`, read `LocalSettings.php` only. Agents never edit `GOALS.md`.
+- Write budget: `writes_per_event` stays 300 per seat and counts rounds 1–3.
+
+### Stretch (round 4, in this order, only after every round-4 line is done; claim items in `Stretch`)
+1. **Accessibility and performance pass.** For each skin at desktop and mobile, anonymous: with the selector open, check the accessibility tree (`take_snapshot`: the dialog has a role and a name, the search box has a label, focus stays inside) and run `lighthouse_audit` (accessibility category) on the QA page. Record a performance trace of opening the selector: time from click to visible dialog, long tasks, ResourceLoader modules loaded. Results go in `docs/a11y-perf.md` (one table per skin). A real problem becomes a new KI entry with evidence, or a new test.
+2. **Explore, then write specs.** Use the MCP to look for selector behaviour that `FEATURES.md` doesn't list yet (new-selector parts, edge cases you find on the way). Add each one to `FEATURES.md`, then cover it with a Playwright test that can fail (show it). One subset run per new test; one full run under the `matrix` lock at the end, posted in `docs/DONE.md`.
+
 ## The test wiki and the machine (read this before you run anything)
 - Wiki: the owner's local **agent wiki**, `http://en.mediawiki-agents.mwdd.localhost:8081` (scripts at `/w/index.php`, pages at `/wiki/<title>`), on this Mac. It already has ULS, MobileFrontend and all seven skins.
 - Credentials: the file `/Users/hueitan/projects/ai-hackathon/runs/ai-hackathon-only__uls-ui-tests/wiki.env` sets `ULS_WIKI`, `ULS_USERS` (8 test accounts, `UlsTest1`…`UlsTest8`) and `ULS_PASSWORD`. The suite reads these environment variables. **Never commit this file or the password, and never paste it in a post.** Use a different account per parallel worker so preference changes don't collide. **Owner update 00:25: each seat uses its own accounts.** Seat N loads `/Users/hueitan/projects/ai-hackathon/runs/ai-hackathon-only__uls-ui-tests/wiki-seat<N>.env` (6 accounts `UlsSeat<N>w1`…`UlsSeat<N>w6`, same variables), so runs by two seats at the same time never share a user. `wiki.env` (`UlsTest1`…`UlsTest8`) is for the owner's runs. The suite must take the account list from `ULS_USERS` and run at most as many logged-in workers as there are accounts.
@@ -117,9 +152,11 @@ Rounds 1–2 met every line above (final runs: #58 and `docs/final-runs.md`; ret
 ai-hackathon:
   repo: ai-hackathon-only/uls-ui-tests
   owner: hueitan            # the human who is responsible
-  start: 2026-11-08T14:00+01:00
-  end:   2026-11-08T17:00+01:00
-  freeze: 2026-11-08T16:15+01:00 # no new feature PRs after this
+  start: 2026-11-15T12:15+09:00
+  end:   2026-11-15T16:15+09:00
+  freeze: 2026-11-15T15:30+09:00 # no new PRs after this
+  mcp: chrome-devtools            # Claude seats with browser: yes get the Chrome DevTools MCP (hk-run)
+  mcp_allow: http://*.mediawiki-agents.mwdd.localhost:8081/*   # the MCP's Chrome can reach only these URLs
   round_minutes: 5                # how often each agent wakes up
   when_done_early: stretch          # stop | stretch | polish-until-end
   seats:                          # identities = GitHub Apps; roles are chosen by the agents
