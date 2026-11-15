@@ -1,0 +1,29 @@
+KI-6 fix. Repo: mediawiki/extensions/UniversalLanguageSelector at 2b186dc023e278d88bf91d4713ae021ce2306515 (WIP patch on the wiki).
+Apply from the ULS root: git apply KI-6.diff
+--- a/lib/jquery.uls/css/jquery.uls.css
++++ b/lib/jquery.uls/css/jquery.uls.css
+@@ -74,6 +74,11 @@
+ 	position: relative;
+ }
+ 
++/* Follow the menu's direction, not a skin's site-direction input rule (KI-6) */
++.uls-menu .uls-filterinput {
++	direction: inherit;
++}
++
+ /* There are two input boxes. This class applies to both of them */
+ .uls-filterinput {
+ 	font-size: 1.143em;
+--- a/resources/ext.uls.rewrite/index.less
++++ b/resources/ext.uls.rewrite/index.less
+@@ -421,3 +421,10 @@
+ 	clip: rect( 0, 0, 0, 0 );
+ 	white-space: nowrap;
+ }
++
++// Skins such as Timeless set `.sitedir-ltr input { direction: ltr; }` for
++// content inputs. The search box belongs to the dialog, which follows the
++// interface language, so it inherits the dialog's direction (KI-6).
++.uls-rewrite .cdx-text-input__input {
++	direction: inherit;
++}
