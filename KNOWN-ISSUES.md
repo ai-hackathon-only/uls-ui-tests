@@ -214,3 +214,43 @@ Checked with `git apply --check` on a copy of the two files. Applied live by add
 
 Tablet and mobile not checked (the button is hidden there by KI-4). A skin-side fix (scope the
 `shared.css` rule to content) was not tested live. The expected-failure marks stay: the wiki code has not changed.
+
+## KI-7
+**New selector does not move focus into the full-screen dialog under 768 px.**
+
+- Skins: `minerva` (mobile). Also `timeless` and `monobook` at mobile 390, where KI-4 and KI-5 already make the row fail. Tablet rows (820 px) are fine. Users: anonymous and logged in.
+- Steps:
+  1. Open `QA ULS search codes` with `useskin=minerva&useformat=mobile` at 390×844 (touch, mobile UA).
+  2. Tap the language button.
+  3. Read `document.activeElement`.
+- Expected: focus is inside the open dialog (`div.uls-rewrite`, `role=dialog`, `aria-modal=true`), on the search input as on desktop.
+- Actual: focus stays on the trigger (Minerva) or on `<body>` (Timeless, MonoBook). A screen reader starts outside a dialog that says it is modal. The first Tab goes inside and the focus trap then holds.
+- Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`. Found in the stretch 1 a11y pass (`docs/a11y-perf.md`, finding 1).
+- In the suite: `tests/viewport.spec.js` "Focus moves into the selector when it opens by tap"; `tests/support/known-issues.js` marks group `focus-on-open` on Minerva, Timeless and MonoBook mobile rows.
+
+### Root cause (KI-7)
+1. Under 768 px the new selector does not use Floating UI, so its `isPositioned` flag never turns true.
+   `focusInput()` waits for that flag before it focuses the search box, so on mobile it waits forever.
+2. Code (`resources/ext.uls.rewrite/UniversalLanguageSelector.vue`): `:477-479` sets the floating reference to
+   `null` when `isMobile`; `:481` takes `isPositioned` from `useFloating`; `:939-942` awaits `watch( isPositioned )`
+   before `searchInputRef.value.focus()` (`:945`). The same hang hits the return from a sub-panel (`:983-985`).
+   Source reading by seat 4 on #90.
+3. Live proof (MCP, seat 1, 13:4x, `/wiki/QA_ULS_search_codes?useskin=minerva&useformat=mobile`, `emulate`
+   390×844×3 mobile touch, iPhone UA, anon): `click` the "Language" button, wait 800 ms, `evaluate_script` →
+   `{"open":true,"modal":"true","active":"A.cdx-button ... language-selector mw-interlanguage-selector","inside":false}`
+   ([#90](https://github.com/ai-hackathon-only/uls-ui-tests/issues/90#issuecomment-6889287481)). Timeless 390 and
+   MonoBook 390: `aria-modal=true`, focus on `BODY`
+   ([#92](https://github.com/ai-hackathon-only/uls-ui-tests/pull/92#issuecomment-6889392983)).
+   Playwright, seat 1, 14:2x, KI-7 mark removed: `npx playwright test tests/viewport.spec.js -g "Focus moves"
+   --project=minerva-mobile-anon --project=minerva-mobile-user` → 2 failed, `Focus is inside the open selector`,
+   Expected: true, Received: false.
+4. Whose code: ULS, new selector (`ext.uls.rewrite`), on the WIP patch.
+5. Old selector: not checked live. The waiting code is only in `ext.uls.rewrite`; the old jquery.uls menu has no
+   `isPositioned` step.
+
+### Fix (KI-7)
+[`docs/fixes/KI-7.diff`](docs/fixes/KI-7.diff): skip the wait when `isMobile` (no floating reference, nothing to
+position, and the dialog is `position: fixed` full screen so no scroll jump, which is what T426954 guards against).
+`git apply --check` passes on a copy of `resources/`. Not shown live: the change is inside the Vue component's setup
+closure, which `evaluate_script` can't reach on the built page. Not checked: whether focusing the input on mobile
+opens the on-screen keyboard right away (a product choice; focusing the dialog itself is the other option).

@@ -81,4 +81,29 @@ test.describe( 'Small screens & viewport responsiveness @viewport', () => {
 		await expect( dialog, 'Selector closes after tapping language item' ).toBeHidden( { timeout: 5000 } );
 	} );
 
+	// KI-7: under 768 px the new selector is a full-screen modal (aria-modal=true),
+	// but focus stays on the trigger or <body> after it opens.
+	test( 'Focus moves into the selector when it opens by tap @viewport', async ( { page, gotoWiki, uls } ) => {
+		if ( uls.device !== 'mobile' && uls.device !== 'tablet' ) {
+			test.skip( true, 'n/a: desktop focus on open is checked under @keyboard' );
+		}
+		markKnownIssues( test, uls, 'focus-on-open' );
+
+		await gotoWiki( 'QA ULS search codes' );
+
+		const trigger = getLanguageTrigger( page, uls.skin );
+		await expect( trigger, `Trigger visible for touch tap on ${ uls.skin }` ).toBeVisible();
+		await trigger.tap();
+
+		const dialog = getSelectorDialog( page );
+		await expect( dialog, 'Selector opens after tap' ).toBeVisible();
+		await waitForStableBox( dialog );
+
+		const dialogHandle = await dialog.elementHandle();
+		await expect.poll( () => page.evaluate( ( d ) => d.contains( document.activeElement ), dialogHandle ), {
+			message: 'Focus is inside the open selector',
+			timeout: 3000
+		} ).toBe( true );
+	} );
+
 } );
