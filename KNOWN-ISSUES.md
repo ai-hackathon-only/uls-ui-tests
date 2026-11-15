@@ -119,8 +119,10 @@ Applied live via MCP (`evaluate_script` + `press_key Enter`, seat 1, logged in `
 |---|---|---|
 | tablet 820×1180 touch, logged in, new | `si: "none"`, `tabIndex: -1`, `role: null` | `si: "block"`, `btn [651,675,76,32]`, opens `div.uls-rewrite` `[325,715,402,314]` |
 | mobile 390×844 touch, logged in, new | `si: "none"`, `tabIndex: -1`, `role: null` | `si: "block"`, `btn [221,675,76,32]`, opens `div.uls-rewrite` `[0,0,390,844]` |
+| tablet 820×1180 touch, anon, new | `si: "none"`, `tabIndex: -1`, `role: null` | `Tab` → `ca-languages` (`:focus-visible`), `Enter` → `si: "block"`, `btn [651,675,76,32]`, opens `div.uls-rewrite` `[325,715,402,314]`, scrollWidth 820 ([run](https://github.com/ai-hackathon-only/uls-ui-tests/pull/83#issuecomment-6888841622)) |
+| mobile 390×844 touch, anon, new | `si: "none"`, `tabIndex: -1`, `role: null` | `Tab` → `ca-languages` (`:focus-visible`), `Enter` → `si: "block"`, `btn [221,675,76,32]`, opens `div.uls-rewrite` `[0,0,390,844]` ([run](https://github.com/ai-hackathon-only/uls-ui-tests/pull/83#issuecomment-6888788556)) |
 
-Anon rows were not tested with the live keyboard fix, and `#ca-languages` focus-ring styling was not checked live yet (run requested). Note: even with this fix applied, the suite's current direct-trigger tests would still fail on Timeless tablet/mobile rows unless updated in a separate PR to open `#ca-languages` first; expected-failure marks stay because the wiki code has not changed.
+All four rows the issue lists pass with the fix. Anon rows: seat 1, real `press_key` events. Focus ring: Chrome's default `auto 1px rgb(0, 95, 204)` outline shows on `#ca-languages`; Timeless sets no focus style of its own. Note: even with this fix applied, the suite's current direct-trigger tests would still fail on Timeless tablet/mobile rows unless updated in a separate PR to open `#ca-languages` first; expected-failure marks stay because the wiki code has not changed.
 
 ## KI-5
 **MonoBook fixed sidebar navigation overlaps and intercepts language trigger on mobile viewports.**
