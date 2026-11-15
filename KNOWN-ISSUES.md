@@ -124,3 +124,40 @@ Allow-listed in `tests/support/known-errors.js`.
 - Screenshot: [docs/ki-6-timeless-desktop-anon-rtl.png](docs/ki-6-timeless-desktop-anon-rtl.png) (desktop, anon, `uselang=ar`). Measured 09:52: dialog `direction` = `rtl`, search input `direction` = `ltr`.
 - Found on: ULS `2b186dc023e278d88bf91d4713ae021ce2306515`, MediaWiki core 1.48.0-alpha `f7d0709ef0c28166422137c3167b0a992b999afd`.
 - In the suite: `tests/support/known-issues.js` marks the `rtl` feature group on Timeless desktop rows as an expected failure.
+
+### Root cause (KI-6)
+1. The page content on this wiki is English, so `<body>` has class `sitedir-ltr` even with `uselang=ar`.
+   Timeless ships an old core stylesheet that makes every `input` under `.sitedir-ltr` left-to-right.
+   The ULS search box is an `input` inside the dialog, so it turns LTR while the dialog around it is RTL.
+2. Code:
+   - Timeless `resources/libraries/shared.css:25-29` (module `skins.timeless`, `skin.json:89`):
+     `.sitedir-ltr textarea, .sitedir-ltr input { /* @noflip */ direction: ltr; }`
+     (the file says it was copied from MediaWiki 1.34).
+   - ULS sets no direction on its search inputs: `lib/jquery.uls/css/jquery.uls.css:78` (`.uls-filterinput`, old
+     selector) and the Codex input in `resources/ext.uls.rewrite/` (new selector) inherit nothing over that rule.
+3. Live proof (MCP, seat 1, 12:16, `…/w/index.php?title=QA_ULS_search_codes&useskin=timeless&uselang=ar`, desktop
+   1280×800, anon, `evaluate_script`: click `button.mw-interlanguage-selector`, wait 2.5 s, walk `document.styleSheets`
+   for rules with `direction` that match the input):
+   `{"v2":true,"htmlDir":"rtl","dlg":"uls-rewrite uls-rewrite--density-medium","dlgDir":"rtl","inp":"<input class=\"cdx-text-input__input\" …>","inpDir":"ltr","rules":[[".sitedir-ltr textarea, .sitedir-ltr input","ltr","…/w/load.php?lang=ar&modules=…%7Cskins.timeless&only=styl…","screen"]]}`.
+   It is the only matching `direction` rule. Logged in as `UlsSeat1w1`: same (`"dlgDir":"rtl","inpDir":"ltr"`).
+4. Whose code: the skin's stylesheet (Timeless). ULS could protect its own dialog; that is the smaller,
+   safer change because the Timeless rule is right for content inputs. Not the WIP patch (see 5).
+5. Old selector: with `qa_t439715=old` (`"v2":false`), the old menu `uls-menu interlanguage-uls-menu` is
+   `rtl` and its input `uls-filterinput uls-filtersuggestion` is `ltr`. The new selector did not bring this in.
+   (Note: the entry above names `input.uls-languagefilter`; the new selector's input is `input.cdx-text-input__input`.)
+
+### Fix (KI-6)
+[`docs/fixes/KI-6.diff`](docs/fixes/KI-6.diff): in ULS, `direction: inherit` on `.uls-menu .uls-filterinput`
+(old) and `.uls-rewrite .cdx-text-input__input` (new). Both selectors are more specific than `.sitedir-ltr input`.
+Checked with `git apply --check` on a copy of the two files. Applied live by adding the same rules in a
+`<style>` element with `evaluate_script`, then reading `getComputedStyle(input).direction` again:
+
+| Row (viewport, user, selector) | Before | With fix |
+|---|---|---|
+| desktop 1280×800, anon, new | input `ltr`, dialog `rtl` | input `rtl` |
+| desktop 1280×800, logged in, new | input `ltr`, dialog `rtl` | input `rtl` |
+| desktop 1280×800, anon, old (`qa_t439715=old`) | input `ltr`, menu `rtl` | input `rtl` |
+| desktop 1280×800, anon, new; cog → Input tab → more languages (jquery.uls menu, two `.uls-filterinput`) | both inputs `ltr`, menu `rtl` | both `rtl` |
+
+Tablet and mobile not checked (the button is hidden there by KI-4). A skin-side fix (scope the
+`shared.css` rule to content) was not tested live. The expected-failure marks stay: the wiki code has not changed.
