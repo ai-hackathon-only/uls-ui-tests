@@ -98,8 +98,8 @@ Allow-listed in `tests/support/known-errors.js`.
 - In the suite: `tests/support/known-issues.js` marks trigger-based feature groups on Timeless tablet and mobile rows as expected failures.
 - Still there (round 4, 2026-11-15): yes (`Special:Version`: core `f7d0709`, Timeless `5bbbfd0`, ULS `2b186dc0`).
 
-### Root cause (KI-4)
-1. At viewport widths `<= 850px`, Timeless intentionally collapses `#other-languages .sidebar-inner` (`display: none`) behind the header `#ca-languages` ("Languages") dropdown toggle, so clicking `#ca-languages` reveals `#p-lang button.mw-interlanguage-selector` and opens `div.uls-rewrite`. However, `#ca-languages` is rendered as `<li class="dropdown-toggle"><span>Languages</span></li>` with `tabIndex: -1`, no `role`, and only a `click` handler—so keyboard users cannot open the toggle, and the suite's direct-trigger tests expect the button to be visible without clicking `#ca-languages` first. (Open question for the owner: keep KI-4 as a skin/a11y bug or update the suite to open `#ca-languages` first in a separate PR.)
+### Root cause (KI-4: Timeless narrow keyboard/AT access & collapsed trigger)
+1. At viewport widths `<= 850px`, Timeless intentionally collapses `#other-languages .sidebar-inner` (`display: none`) behind the header `#ca-languages` ("Languages") dropdown toggle; tapping or clicking `#ca-languages` reveals `#p-lang button.mw-interlanguage-selector` and opens `div.uls-rewrite`. The actual Timeless skin defect is keyboard/AT access: `#ca-languages` is rendered as `<li class="dropdown-toggle"><span>Languages</span></li>` with `tabIndex: -1`, no `role`, and only a `click` handler, so keyboard users cannot open it. The suite's direct-trigger tests still fail on Timeless tablet/mobile rows because they expect `button.mw-interlanguage-selector` to be visible without opening `#ca-languages` first; updating the suite to open `#ca-languages` first belongs in a separate test PR (out of scope for this root-cause PR, so `xfail` marks stay for now).
 2. Code:
    - Timeless `resources/screen-mobile.less:52-54` (loaded via `skin.json:113-114` with `media: "screen and (max-width: 850px)"`): `.sidebar-inner, .dropdown { display: none; }` hides `#other-languages .sidebar-inner` (rendered by `includes/TimelessTemplate.php:1123-1128`).
    - Timeless `includes/TimelessTemplate.php:883-887`: `$pileOfTools['languages']` has no `'href'`, producing `<li><span>Languages</span></li>` (`tabIndex: -1`, `role: null`).
@@ -120,7 +120,7 @@ Applied live via MCP (`evaluate_script` + `press_key Enter`, seat 1, logged in `
 | tablet 820×1180 touch, logged in, new | `si: "none"`, `tabIndex: -1`, `role: null` | `si: "block"`, `btn [651,675,76,32]`, opens `div.uls-rewrite` `[325,715,402,314]` |
 | mobile 390×844 touch, logged in, new | `si: "none"`, `tabIndex: -1`, `role: null` | `si: "block"`, `btn [221,675,76,32]`, opens `div.uls-rewrite` `[0,0,390,844]` |
 
-Anon rows were not tested with the live keyboard fix; expected-failure marks stay because the wiki code has not changed.
+Anon rows were not tested with the live keyboard fix, and `#ca-languages` focus-ring styling was not checked live yet (run requested). Note: even with this fix applied, the suite's current direct-trigger tests would still fail on Timeless tablet/mobile rows unless updated in a separate PR to open `#ca-languages` first; expected-failure marks stay because the wiki code has not changed.
 
 ## KI-5
 **MonoBook fixed sidebar navigation overlaps and intercepts language trigger on mobile viewports.**
