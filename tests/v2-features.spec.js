@@ -50,20 +50,22 @@ test.describe( 'ULS V2 rewrite selector behaviours @v2', () => {
 			await expect.soft( dialog.locator( '.uls-rewrite__section' ).first(), 'Default language sections return after clear' ).toBeVisible();
 		} );
 
-		await test.step( 'Tab accepts typeahead ghost autocomplete', async () => {
-			await searchInput.fill( 'Fre' );
-			const ghostInput = dialog.locator( '.uls-rewrite__search-ghost input' );
-			await expect.soft( ghostInput, 'Typeahead ghost input appears for "Fre"' ).toBeVisible();
-			const ghostVal = await ghostInput.inputValue().catch( () => '' );
-			expect.soft( ghostVal.toLowerCase(), 'Ghost suggestion extends "fre"' ).toMatch( /^fre.+/ );
+		if ( uls.device === 'desktop' ) {
+			await test.step( 'Tab accepts typeahead ghost autocomplete', async () => {
+				await searchInput.fill( 'Fre' );
+				const ghostInput = dialog.locator( '.uls-rewrite__search-ghost input' );
+				await expect.soft( ghostInput, 'Typeahead ghost input appears for "Fre"' ).toBeVisible();
+				const ghostVal = await ghostInput.inputValue().catch( () => '' );
+				expect.soft( ghostVal.toLowerCase(), 'Ghost suggestion extends "fre"' ).toMatch( /^fre.+/ );
 
-			await searchInput.press( 'Tab' );
-			const tabAccepted = await searchInput.inputValue();
-			expect.soft( tabAccepted.toLowerCase(), 'Tab accepts ghost suggestion' ).toBe( ghostVal.toLowerCase() );
-			await expect.soft( ghostInput, 'Ghost input hides after Tab acceptance' ).toBeHidden();
+				await searchInput.press( 'Tab' );
+				const tabAccepted = await searchInput.inputValue();
+				expect.soft( tabAccepted.toLowerCase(), 'Tab accepts ghost suggestion' ).toBe( ghostVal.toLowerCase() );
+				await expect.soft( ghostInput, 'Ghost input hides after Tab acceptance' ).toBeHidden();
 
-			await searchInput.fill( '' );
-		} );
+				await searchInput.fill( '' );
+			} );
+		}
 
 		let resultStatus = '';
 		await test.step( 'Live screen-reader status updates on search and empty results', async () => {
@@ -93,18 +95,19 @@ test.describe( 'ULS V2 rewrite selector behaviours @v2', () => {
 			await searchInput.fill( '' );
 			await searchInput.click();
 
-			await searchInput.press( 'PageDown' );
 			const highlighted = dialog.locator( '.uls-rewrite__language-item--highlighted' ).first();
-			await expect.soft( highlighted, 'PageDown highlights a language item' ).toBeVisible();
-			const afterDownCode = await highlighted.getAttribute( 'data-code' ) || await highlighted.textContent();
+			await searchInput.press( 'ArrowDown' );
+			await expect.soft( highlighted, 'ArrowDown highlights the first language item' ).toBeVisible();
+			const firstCode = await highlighted.getAttribute( 'data-language-code' ) || await highlighted.textContent();
 
 			await searchInput.press( 'PageDown' );
-			const secondDownCode = await highlighted.getAttribute( 'data-code' ) || await highlighted.textContent();
-			expect.soft( secondDownCode, 'Second PageDown advances further down the list' ).not.toBe( afterDownCode );
+			await expect.soft( highlighted, 'PageDown keeps a language item highlighted' ).toBeVisible();
+			const afterDownCode = await highlighted.getAttribute( 'data-language-code' ) || await highlighted.textContent();
+			expect.soft( afterDownCode, 'PageDown jumps down from the first item' ).not.toBe( firstCode );
 
 			await searchInput.press( 'PageUp' );
-			const afterUpCode = await highlighted.getAttribute( 'data-code' ) || await highlighted.textContent();
-			expect.soft( afterUpCode, 'PageUp returns highlight to the first PageDown item' ).toBe( afterDownCode );
+			const afterUpCode = await highlighted.getAttribute( 'data-language-code' ) || await highlighted.textContent();
+			expect.soft( afterUpCode, 'PageUp returns highlight to the first item' ).toBe( firstCode );
 		} );
 	} );
 

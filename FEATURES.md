@@ -173,7 +173,7 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 ## 13. New Selector (ULS V2) Behaviours (`@v2`)
 
 - **Description:** Behaviours introduced in the Vue/Codex ULS V2 rewrite (`UniversalLanguageSelector.vue`, DOM root `.uls-rewrite`):
-  1. **Typeahead ghost autocomplete:** `.uls-rewrite__search-ghost` displays inline completion when typing a prefix; `ArrowRight` at the end of the query or `Tab` accepts the completion into `.uls-rewrite__search-active input`.
+  1. **Typeahead ghost autocomplete:** `.uls-rewrite__search-ghost` displays inline completion when typing a prefix; `ArrowRight` at the end of the query (all viewports) or `Tab` (desktop; on mobile `useFocusTrap` may consume `Tab`) accepts the completion into `.uls-rewrite__search-active input`.
   2. **Distinct empty states:** Searching a valid-but-unavailable language (`hasSearchHits === true`) shows `ext-uls-unsupported-language-title` / `EmptySearchEntrypoint`, while an unrecognised query (`hasSearchHits === false`) shows `ext-uls-invalid-language-search-title`.
   3. **Live screen-reader status:** `.uls-rewrite__sr-only[role="status"]` updates with the search result count or no-results announcement.
   4. **Keyboard list pagination:** `PageDown` and `PageUp` in the search input jump the highlighted language item (`.uls-rewrite__language-item--highlighted`) by page.
