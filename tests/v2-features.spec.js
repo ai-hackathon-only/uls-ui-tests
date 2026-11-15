@@ -53,6 +53,25 @@ test.describe( 'ULS V2 rewrite selector behaviours @v2', () => {
 			await expect.soft( dialog.locator( '.uls-rewrite__section' ).first(), 'Default language sections return after clear' ).toBeVisible();
 		} );
 
+		await test.step( 'Tab accepts typeahead ghost autocomplete', async () => {
+			await searchInput.fill( 'Fre' );
+			const ghostInput = dialog.locator( '.uls-rewrite__search-ghost input' );
+			await expect.soft( ghostInput, 'Typeahead ghost input appears for "Fre"' ).toBeVisible();
+			const ghostVal = await ghostInput.inputValue().catch( () => '' );
+			expect.soft( ghostVal.toLowerCase(), 'Ghost suggestion extends "fre"' ).toMatch( /^fre.+/ );
+
+			await searchInput.press( 'Tab' );
+			await expect.soft( searchInput, 'Tab accepts ghost suggestion' ).toHaveValue( ghostVal );
+			await expect.soft( ghostInput, 'Ghost input hides after Tab acceptance' ).toBeHidden();
+
+			const clearBtn = dialog.locator( '.uls-rewrite__search-active .cdx-text-input__clear-icon' );
+			if ( await clearBtn.isVisible() ) {
+				await clearBtn.click();
+			} else {
+				await searchInput.fill( '' );
+			}
+		} );
+
 		let resultStatus = '';
 		await test.step( 'Live screen-reader status updates on search and empty results', async () => {
 			const srStatus = dialog.locator( '.uls-rewrite__sr-only[role="status"]' );
@@ -70,6 +89,8 @@ test.describe( 'ULS V2 rewrite selector behaviours @v2', () => {
 			const invalidTitle = ( await noResultsTitle.textContent() || '' ).trim();
 			expect.soft( invalidTitle.length, 'Invalid query heading is non-empty' ).toBeGreaterThan( 0 );
 
+			// QA ULS search codes has 12 langlinks (als, be-x-old, de, es, fr, it, ja, nl, pt, simple, sv, zh-yue);
+			// Zulu (zu) is a valid ULS language that is not linked on this page.
 			await searchInput.fill( 'Zulu' );
 			await expect.soft( noResultsTitle, 'Valid-but-unavailable language "Zulu" shows empty-search heading' ).toBeVisible();
 			await expect.soft( noResultsTitle, 'Valid-unavailable heading differs from invalid-query heading' ).not.toHaveText( invalidTitle );
@@ -95,7 +116,7 @@ test.describe( 'ULS V2 rewrite selector behaviours @v2', () => {
 
 			await searchInput.press( 'PageUp' );
 			const afterUpCode = await highlighted.getAttribute( 'data-code' ) || await highlighted.textContent();
-			expect.soft( afterUpCode, 'PageUp moves highlight back up' ).not.toBe( secondDownCode );
+			expect.soft( afterUpCode, 'PageUp returns highlight to the first PageDown item' ).toBe( afterDownCode );
 		} );
 	} );
 
