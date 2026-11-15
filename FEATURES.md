@@ -198,5 +198,5 @@ This document maps every user-facing UniversalLanguageSelector (ULS) feature acr
 | **@rtl** (Mirroring & 390px) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail; KI-6 desktop fail) | Yes | Expected fail: KI-1 | Yes |
 | **@viewport** (Responsive tap) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes | Expected fail: KI-1 | Yes |
 | **@compact-links** (Compacted) | `n/a: v2022 dropdown` | Yes | Yes | Yes | Yes | Expected fail: KI-1 | `n/a: minerva` |
-| **@v2** (V2 ghost, empty, SR, PageDown) | Pending run | Pending run | Pending run (KI-5 mobile) | Pending run (KI-4 tablet/mobile) | Pending run | Expected fail: KI-1 | Pending run |
+| **@v2** (V2 ghost, empty, SR, PageDown) | Yes | Yes | Yes (KI-5 mobile fail) | Yes (KI-4 tablet/mobile fail) | Yes | Expected fail: KI-1 | Yes |
 | **@errors** (No 4xx/5xx/console) | Yes | Yes | Yes | Yes | Yes | Expected fail: KI-1 | Yes |
