@@ -1,0 +1,14 @@
+KI-1 fix. Repo: mediawiki/skins/CologneBlue at 6d46c5f264daac3fde41dfb8cd41b8c7a8f9ca7b.
+Apply from the skin root: git apply KI-1.diff
+
+--- a/templates/skin.mustache
++++ b/templates/skin.mustache
+@@ -6,7 +6,7 @@
+ 
+         <p id="sitesub">{{msg-sitesubtitle}}</p>
+         <div id="linkcollection" role="navigation">
+-            <div id="langlinks">{{#data-portlets.data-languages}}{{>Languages}}{{/data-portlets.data-languages}}</div>
++            <div id="langlinks" class="mw-portlet-lang">{{#data-portlets.data-languages}}{{>Languages}}{{/data-portlets.data-languages}}</div>
+             {{{html-categories}}}
+             <div id="titlelinks">{{#data-portlets.data-footer-places.array-items}}{{!
+                 }}<span>{{{html}}}</span>{{!
